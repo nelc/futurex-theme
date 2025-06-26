@@ -9,6 +9,8 @@ from django.urls import reverse
 
 
 <%
+platform_settings_language = fx_static.get_fx_config_value('platform_settings_language', default_value={})
+print("THEME-RENDER: platform_settings_language:", platform_settings_language)
 available_languages = fx_static.get_fx_config_value('platform_settings_language', default_value={}).get('languages', ['en'])
 print("THEME-RENDER: Available languages:", available_languages)
 languages = []
