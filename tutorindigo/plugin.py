@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import os
 import typing as t
+from glob import glob
 
 import importlib_resources
 from tutor import hooks
 from tutor.__about__ import __version_suffix__
-from tutormfe.hooks import MFE_APPS
+from tutormfe.hooks import PLUGIN_SLOTS
 
 from .__about__ import __version__
 
@@ -21,7 +22,7 @@ config: t.Dict[str, t.Dict[str, t.Any]] = {
     "defaults": {
         "VERSION": __version__,
         "WELCOME_MESSAGE": "The place for all your online learning",
-        "PRIMARY_COLOR": "#4600c7",  # Indigo
+        "PRIMARY_COLOR": "#15376D",  # Indigo
         "ENABLE_DARK_TOGGLE": True,
         # Footer links are dictionaries with a "title" and "url"
         # To remove all links, run:
@@ -77,7 +78,7 @@ with open(
 # Override openedx & mfe docker image names
 @hooks.Filters.CONFIG_DEFAULTS.add(priority=hooks.priorities.LOW)
 def _override_openedx_docker_image(
-    items: list[tuple[str, t.Any]]
+    items: list[tuple[str, t.Any]],
 ) -> list[tuple[str, t.Any]]:
     openedx_image = ""
     mfe_image = ""
@@ -103,68 +104,43 @@ hooks.Filters.CONFIG_UNIQUE.add_items(
 hooks.Filters.CONFIG_OVERRIDES.add_items(list(config["overrides"].items()))
 
 
-hooks.Filters.ENV_PATCHES.add_items(
-    [
-        # MFE will install header version 3.0.x and will include indigo-footer as a
-        # separate package for use in env.config.jsx
-        (
-            "mfe-dockerfile-post-npm-install-learning",
-            """
-RUN npm install '@edx/brand@https://github.com/MubeenFayyaz-Arbisoft/brand-openedx.git#v1.0.2'
-RUN npm install '@edx/frontend-component-header@npm:@edly-io/indigo-frontend-component-header@^3.1.3'
-RUN npm install @edly-io/indigo-frontend-component-footer@^2.0.0
+#  MFEs that are styled using Indigo
+indigo_styled_mfes = [
+    "learning",
+    "learner-dashboard",
+    "profile",
+    "account",
+    "discussions",
+]
 
-COPY indigo/env.config.jsx /openedx/app/
-""",
-        ),
-        (
-            "mfe-dockerfile-post-npm-install-authn",
-            """
-RUN npm install '@edx/brand@https://github.com/MubeenFayyaz-Arbisoft/brand-openedx.git#v1.0.2'
-""",
-        ),
-        # Tutor-Indigo v2.1 targets the styling updates in discussions and learner-dashboard MFE
-        # brand-openedx is related to styling updates while others are for header and footer updates
-        (
-            "mfe-dockerfile-post-npm-install-discussions",
-            """
-RUN npm install '@edx/brand@https://github.com/MubeenFayyaz-Arbisoft/brand-openedx.git#v1.0.2'
-RUN npm install '@edx/frontend-component-header@npm:@edly-io/indigo-frontend-component-header@^3.1.3'
-RUN npm install @edly-io/indigo-frontend-component-footer@^2.0.0
 
-COPY indigo/env.config.jsx /openedx/app/
-""",
-        ),
-        (
-            "mfe-dockerfile-post-npm-install-learner-dashboard",
-            """
-RUN npm install '@edx/brand@https://github.com/MubeenFayyaz-Arbisoft/brand-openedx.git#v1.0.2'
-RUN npm install @edly-io/indigo-frontend-component-footer@^2.0.0
+for mfe in indigo_styled_mfes:
+    hooks.Filters.ENV_PATCHES.add_items(
+        [
+            (
+                f"mfe-dockerfile-post-npm-install-{mfe}",
+                """
+RUN npm install @edly-io/indigo-frontend-component-footer@^3.0.0
+RUN npm install '@edx/frontend-component-header@npm:@edly-io/indigo-frontend-component-header@^4.0.0'
+RUN npm install '@edx/brand@npm:@edly-io/indigo-brand-openedx@^2.2.2'
 
-COPY indigo/env.config.jsx /openedx/app/
 """,
-        ),
-        (
-            "mfe-dockerfile-post-npm-install-profile",
-            """
-RUN npm install '@edx/brand@https://github.com/MubeenFayyaz-Arbisoft/brand-openedx.git#v1.0.2'
-RUN npm install '@edx/frontend-component-header@npm:@edly-io/indigo-frontend-component-header@^3.1.3'
-RUN npm install @edly-io/indigo-frontend-component-footer@^2.0.0
+            ),
+            (
+                f"mfe-env-config-runtime-definitions-{mfe}",
+                """
+const { default: IndigoFooter } = await import('@edly-io/indigo-frontend-component-footer');
+""",
+            ),
+        ]
+    )
 
-COPY indigo/env.config.jsx /openedx/app/
-""",
-        ),
-        (
-            "mfe-dockerfile-post-npm-install-account",
-            """
-RUN npm install '@edx/brand@https://github.com/MubeenFayyaz-Arbisoft/brand-openedx.git#v1.0.2'
-RUN npm install '@edx/frontend-component-header@npm:@edly-io/indigo-frontend-component-header@^3.1.3'
-RUN npm install @edly-io/indigo-frontend-component-footer@^2.0.0
 
-COPY indigo/env.config.jsx /openedx/app/
-""",
-        ),
-    ]
+hooks.Filters.ENV_PATCHES.add_item(
+    (
+        "mfe-dockerfile-post-npm-install-authn",
+        "RUN npm install '@edx/brand@npm:@edly-io/indigo-brand-openedx@^2.2.2'",
+    )
 )
 
 # Include js file in lms main.html, main_django.html, and certificate.html
@@ -195,37 +171,59 @@ for filename in javascript_files:
         PIPELINE['JAVASCRIPT'][filename]['source_filenames'] += dark_theme_filepath
 
 MFE_CONFIG['INDIGO_ENABLE_DARK_TOGGLE'] = {{ INDIGO_ENABLE_DARK_TOGGLE }}
+MFE_CONFIG['INDIGO_FOOTER_NAV_LINKS'] = {{ INDIGO_FOOTER_NAV_LINKS }}
 """,
         ),
         (
             "openedx-lms-production-settings",
             """
 MFE_CONFIG['INDIGO_ENABLE_DARK_TOGGLE'] = {{ INDIGO_ENABLE_DARK_TOGGLE }}
+MFE_CONFIG['INDIGO_FOOTER_NAV_LINKS'] = {{ INDIGO_FOOTER_NAV_LINKS }}
 """,
         ),
     ]
 )
 
-@MFE_APPS.add()
-def _add_my_mfe(mfes):
-    mfes["authn"] = {
-        "repository": "https://github.com/edly-io/frontend-app-authn.git",
-        "port": 1999,
-        "version": "nelc-v1.0.1", # optional, will default to the Open edX current tag.
-    }
-    mfes["learning"] = {
-        "repository": "https://github.com/edly-io/frontend-app-learning.git",
-        "port": 2000,
-        "version": "nelc-v1.0.1", # optional, will default to the Open edX current tag.
-    }    
-    mfes["discussions"] = {
-        "repository": "https://github.com/edly-io/frontend-app-discussions.git",
-        "port": 2002,
-        "version": "nelc-v1.0.1", # optional, will default to the Open edX current tag.
-    }
-    mfes["learner-dashboard"] = {
-        "repository": "https://github.com/edly-io/frontend-app-learner-dashboard.git",
-        "port": 1996,
-        "version": "nelc-v1.0.1", # optional, will default to the Open edX current tag.
-    }
-    return mfes
+
+# Apply patches from tutor-indigo
+for path in glob(
+    os.path.join(
+        str(importlib_resources.files("tutorindigo") / "patches"),
+        "*",
+    )
+):
+    with open(path, encoding="utf-8") as patch_file:
+        hooks.Filters.ENV_PATCHES.add_item((os.path.basename(path), patch_file.read()))
+
+
+for mfe in indigo_styled_mfes:
+    PLUGIN_SLOTS.add_item(
+        (
+            mfe,
+            "footer_slot",
+            """
+            {
+                op: PLUGIN_OPERATIONS.Hide,
+                widgetId: 'default_contents',
+            },
+            {
+                op: PLUGIN_OPERATIONS.Insert,
+                widget: {
+                    id: 'default_contents',
+                    type: DIRECT_PLUGIN,
+                    priority: 1,
+                    RenderWidget: <IndigoFooter />,
+                },
+            },
+            {
+                op: PLUGIN_OPERATIONS.Insert,
+                widget: {
+                    id: 'read_theme_cookie',
+                    type: DIRECT_PLUGIN,
+                    priority: 2,
+                    RenderWidget: AddDarkTheme,
+                },
+            },
+  """,
+        ),
+    )
