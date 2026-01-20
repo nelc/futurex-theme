@@ -1616,6 +1616,29 @@ body.view-instructordash {
   }
 }
 
+body.rtl {
+  .global-header {
+    .header-container {
+      .nav-links {
+        .main {
+          float: right;
+        }
+        .secondary {
+          float: left;
+        }
+      }
+      .header-logo {
+        a {
+          float: right;
+        }
+      }
+      .settings-language-form {
+        float: left;
+      }
+    }
+  }
+}
+
 @import "../../../instructor/instructor";
 @import "../../../wiki/wiki";
 @import "../../../extra/footer";
