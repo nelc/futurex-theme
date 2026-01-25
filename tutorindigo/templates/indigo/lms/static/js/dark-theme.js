@@ -8,11 +8,25 @@ $(document).ready(function() {
       $('body').toggleClass("indigo-dark-theme", theme === 'dark');       // append or remove dark-class based on cookie-value
       // update expiry
       $.cookie(themeCookie, theme, { domain: window.location.hostname, expires: 90, path: '/' });
+      updateAccessibility();
     }
 
     function setThemeToggleBtnState(){
       const theme = $.cookie(themeCookie);
       $("#toggle-switch-input").prop("checked", theme === 'dark');
+      updateAccessibility();
+    }
+
+    function updateAccessibility() {
+      const theme = $.cookie(themeCookie);
+      const textWrapper = $('#theme-label');
+      if (theme === 'dark') {
+        textWrapper.text('Switch to Light Mode');
+        textWrapper.attr('aria-checked', 'true');
+      } else {
+        textWrapper.text('Switch to Dark Mode');
+        textWrapper.attr('aria-checked', 'false');
+      }
     }
     
     function toggleTheme(){
@@ -33,4 +47,9 @@ $(document).ready(function() {
     setThemeToggleBtnState(); // check/uncheck toggle btn based on theme
 
     $('#toggle-switch').on('change', toggleTheme);
+    $('#toggle-switch-input').on('keydown', function (event) {
+      if (event.key === "Enter") {
+          toggleTheme();
+      }
+    });
 });

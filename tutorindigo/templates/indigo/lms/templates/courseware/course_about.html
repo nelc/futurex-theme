@@ -54,7 +54,7 @@ from openedx.core.lib.courses import course_image_url
 
 <%block name="pagetitle">${course.display_name_with_default}</%block>
 
-<section class="course-info about container">
+<section class="course-info about container" id="main">
 
   <%block name="course_about_header">
   <!-- Course profile header is updated inclusive of course heading and course image. -->
@@ -71,7 +71,7 @@ from openedx.core.lib.courses import course_image_url
         % if get_course_about_section(request, course, "video"):
         <a href="#video-modal" class="media" rel="leanModal">
           <div class="hero">
-            <img src="${course_image_urls['large']}" alt="" />
+            <img src="${course_image_urls['large']}" alt="" aria-hidden="true" />
             <div class="play-intro"></div>
           </div>
         </a>
@@ -79,7 +79,7 @@ from openedx.core.lib.courses import course_image_url
         <div class="media">
           <div class="hero">
             <!-- NEW IN INDIGO: Add fallback image in case of no course-image using onerror -->
-            <img src="${course_image_urls['large']}" onerror="this.src='/theming/asset/images/no_course_image.png';" alt="" />
+            <img src="${course_image_urls['large']}" onerror="this.src='/theming/asset/images/no_course_image.png';" alt="" aria-hidden="true" />
           </div>
         </div>
         % endif
@@ -87,12 +87,10 @@ from openedx.core.lib.courses import course_image_url
       </div>
       <div class="main-cta">
         %if user.is_authenticated and registered:
+          <span class="register disabled">${_("Already Enrolled")}</span>
           %if show_courseware_link:
             <a href="${course_target}" class="ctaWrapper">
           %endif
-
-          <span class="register disabled">${_("Already Enrolled")}</span>
-
           %if show_courseware_link:
             <strong class="ctaWrapper__viewcourse">${_("View Course")}</strong>
             </a>

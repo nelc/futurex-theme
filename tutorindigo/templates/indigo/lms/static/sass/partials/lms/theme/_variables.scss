@@ -28,7 +28,9 @@ $border-color-l:#e4e4e4;
 
 $primary-d: #AEC7F6;
 $primary-light-d: #292A2C;
-$light-drak-d: #374151;
+$gray-light: #E5E7EB;
+$gray-lighter: #c8c8c8;
+$light-dark-d: #374151;
 $text-color-d: #f8f8f8;
 $text-color-primary: #DDDFE2;
 $border-color-d: #777792;
@@ -36,8 +38,9 @@ $light-overlay-d: #36383B;
 $danger-d: #FFA07A;
 $success-d: #54CF5E;
 $btn-color-d: #112F6B;
-$body-bg-d:#0D0D0E;
+$body-bg-d: #0D0D0E;
 
+$instructor-input-border-color: $gray-lighter;
 
 $warning-400: #ffe340;
 $page-color-transition: transparent .2s ease, color .2s ease;

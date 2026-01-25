@@ -130,9 +130,13 @@ header.global-header {
         }
     }
     .hamburger-menu {
-        height: 12px;
+        height: 17px;
         width: 20px;
         top: 18px;
+        background: none;
+        border: 0;
+        padding: 0;
+        box-shadow: none;
         right: 20px !important;
         left: unset !important;
         &:dir(rtl){
@@ -229,6 +233,12 @@ header.global-header {
                 opacity: 0;
                 width: 0;
                 height: 0;
+                &:focus {
+                    ~ .slider {
+                        outline: 2px solid $primary;
+                        outline-offset: 1px;
+                    }
+                }
             }
 
             /* The slider */
@@ -345,6 +355,13 @@ body.indigo-dark-theme {
         }
         #toggle-switch {
             .switch {
+                input {
+                    &:focus {
+                        ~ .slider {
+                          outline-color: $primary-d;
+                        }
+                    }
+                }
                 /* The slider */
                 .slider {
                     background-color: #ccc;
