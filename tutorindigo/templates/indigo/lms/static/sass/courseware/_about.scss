@@ -55,6 +55,7 @@
       display: block;
       max-width: 400px;
       width: 100%;
+      align-self: flex-end;
       @include media-breakpoint-up(md) {
         float: right;
         width: 32%;
@@ -639,6 +640,7 @@ body.indigo-dark-theme {
           padding: 10px 0 40px !important;
           .profile-top {
             flex-direction: column;
+            align-items: flex-start;
             .info-profile {
               padding-bottom: 20px;
             }
