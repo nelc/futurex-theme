@@ -16,6 +16,14 @@ label,
 button {
   font-family: $font-family-title !important;
 }
+// Unify all button text size (#5)
+.btn,
+.action-primary,
+.action-secondary,
+input[type="submit"],
+input[type="button"] {
+  font-size: $button-font-size;
+}
 html {
   background: transparent !important;
 }
@@ -450,7 +458,7 @@ body.view-student-notes {
       border-color: $primary !important;
       color: white !important;
       text-shadow: none !important;
-      font-size: 14px;
+      font-size: $button-font-size;
       font-weight: 500;
     }
   }
@@ -640,7 +648,7 @@ body.view-instructordash {
     border-color: $primary;
     color: white;
     font-weight: 500;
-    font-size: 14px;
+    font-size: $button-font-size;
     box-shadow: none;
   }
 }

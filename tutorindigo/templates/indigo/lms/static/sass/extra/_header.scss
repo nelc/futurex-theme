@@ -21,7 +21,7 @@ header.global-header {
             height: auto;
     
             .logo {
-                height: 30px !important;
+                height: 65px !important;
                 margin: 0;
             }
         }
@@ -32,7 +32,7 @@ header.global-header {
             a{
                 margin: 0 !important;
             .logo{
-            height: 20px !important;
+            height: 45px !important;
 
             }
         }
@@ -42,6 +42,13 @@ header.global-header {
         width: 100%;
         .main {
             margin: 0 0 0 38px;
+            // RTL fix: on desktop the nav items must sit on the right so the menu
+            // isn't "reflected" on non-homepage pages (LTR keeps default flow).
+            @include media-breakpoint-up(lg) {
+                .nav-item:dir(rtl) {
+                    float: right;
+                }
+            }
             .nav-tab {
                 a {
                     font-size: 14px;
@@ -181,7 +188,7 @@ header.global-header {
 }
 .header-container {
     margin: 0 auto;
-    padding: 0 15px;
+    padding: 0 15px 8px;
     max-width: 1600px;
     box-sizing: border-box;
     border-bottom: 1px solid #f3f3f3 !important;

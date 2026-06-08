@@ -117,18 +117,6 @@
               -webkit-line-clamp: 2;
               -webkit-box-orient: vertical;
             }
-            .course-organization {
-              color: #70787e;
-              font-size: 14px;
-              line-height: 20px;
-              height: auto;
-              padding: 0;
-              margin: 0 0 15px;
-              display: block;
-              overflow: hidden;
-              white-space: nowrap;
-              text-overflow: ellipsis;
-            }
             .learn-more {
               display: block;
               border-radius: 6px;
@@ -513,9 +501,6 @@ body.indigo-dark-theme {
             .course-info {
               .course-title {
                 color: $text-color-d;
-              }
-              .course-organization {
-                color: $text-color-primary;
               }
               .learn-more {
                 background: $primary-d;

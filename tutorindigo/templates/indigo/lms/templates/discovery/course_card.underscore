@@ -9,7 +9,6 @@
             <h2 class="course-name">
                 <span class="course-code"><%- content.number %></span>
                 <span class="course-title"><%- content.display_name %></span>
-                <span class="course-organization"><%- org %></span>
             </h2>
             <a href="/courses/<%- course %>/about" class="learn-more" aria-label="">
               <%- gettext("Learn More") %>

@@ -21,6 +21,9 @@ $purple-heart: var(--fx-2025-indigo-purple-heart);
 $blue-dianne: var(--fx-2025-indigo-blue-dianne);
 $black: var(--fx-2025-indigo-black);
 
+// Unified vertical gap between page sections (#11)
+$section-gap: 64px;
+
 .fx-icon-color {
   color: var(--green-button-bg);
 }
@@ -97,17 +100,26 @@ $black: var(--fx-2025-indigo-black);
 }
 
 .homeStaticPage {
-  margin-top: 69px;
+  // Connect the first section directly to the header — no gap (#12)
+  margin-top: 0;
   width: 100%;
   max-width: 1170px;
   padding-left: 0 !important;
   padding-right: 0 !important;
+}
+// Homepage: first section flush to header, last section flush to footer (#12)
+.homeStaticPage > :first-child {
+  margin-top: 0;
+}
+.homeStaticPage > :last-child {
+  margin-bottom: 0;
 }
 section.home {
   padding: 0 !important;
 }
 .mainBanner {
   background-size: cover;
+  background-position: center center;
   border-radius: 20px;
   font-family: "Poppins", serif;
   height: 600px;
@@ -159,12 +171,17 @@ section.home {
 }
 
 .platformMainWrap {
-  margin-top: 64px;
+  margin-top: $section-gap;
   padding: 40px;
+}
+// Prevent double gaps when section wrappers nest (e.g. the FAQ section) (#11)
+.platformMainWrap .platformMainWrap {
+  margin-top: 0;
 }
 .courseMainWrapper {
   background-color: $concrete-color;
-  border-radius: 16px;
+  // Homepage training-courses section connects flush to header/footer (#12)
+  border-radius: 0;
 }
 
 .platformProfile {
@@ -172,7 +189,10 @@ section.home {
 
   padding: 24px;
   border: 1px solid $concrete-color;
-  border-radius: 8px;
+  // Migrated from runtime override (G)
+  border-bottom: 2px solid var(--main-primary-color);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
   &__heading {
     font-size: 18px;
@@ -189,8 +209,10 @@ section.home {
   .icon {
     width: 48px;
     height: 48px;
-    color: $white-color;
-    background-color: var(--main-primary-color);
+    // Migrated from runtime override (G)
+    color: #001f55;
+    background-color: #ffffff;
+    border: 2px solid #1c3133;
     border-radius: 100px;
     margin-bottom: 16px;
     display: flex;
@@ -208,18 +230,27 @@ section.home {
 .newCard {
   background: $white-color;
   border-radius: 16px;
-  height: 230px;
+  height: unset;
   padding: 18px 24px;
   width: 100%;
   display: flex;
   flex-direction: column;
   &__courseImg {
-    border: 1px solid #f3f3f3;
+    border: none;
     background-color: #fff;
     border-radius: 8px;
-    width: 48px;
-    height: 48px;
-    object-fit: contain;
+    width: 100%;
+    height: 200px;
+    margin: auto;
+    object-fit: cover;
+  }
+  &__courseName {
+    // Hide the course-number line on homepage cards (per design)
+    display: none;
+  }
+  &__courseBody {
+    // Bold the course title to match the training-programs page (#9)
+    font-weight: 500;
   }
   &__detail {
     display: flex;
@@ -259,7 +290,7 @@ section.home {
   justify-content: center;
   &__action {
     background-color: var(--green-button-bg);
-    font-size: 18px;
+    font-size: $button-font-size;
     font-family: $poppins-font-family;
     color: $white-color !important;
     text-decoration: none !important;
@@ -340,7 +371,8 @@ section.home {
   width: 100%;
   max-width: 700px;
   margin: 10px auto;
-  font-family: $inter-font-family;
+  // Unify FAQ font with the rest of the site (Arabic-aware) (#10)
+  font-family: $font-family-title;
 
   .accordion-item {
     border: 0;
@@ -386,6 +418,10 @@ section.home {
     line-height: 24px;
     padding: 20px 0;
     text-align: start;
+    // Unify the answer font even if the rich-text content carries inline fonts (#10)
+    &, p, span, div, li, a, strong, em {
+      font-family: $font-family-title !important;
+    }
   }
 }
 
@@ -396,8 +432,13 @@ section.home {
   display: flex;
   justify-content: center;
   flex-direction: column;
+  // Migrated from runtime override (G)
+  padding: 35px 15px 25px 15px;
+  border-bottom: 2px solid var(--main-primary-color);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   &__heading {
-    font-size: 36px;
+    font-size: 25px;
     font-weight: 800;
     line-height: 45px;
     font-family: $inter-font-family;
@@ -405,7 +446,8 @@ section.home {
   }
   &__desc {
     color: $scorpion-color;
-    font-size: 20px;
+    font-size: 16px;
+    margin-top: 10px;
   }
 }
 
@@ -470,7 +512,7 @@ section.home {
   &__action {
     padding: 10px 20px;
     background-color: var(--green-button-bg) !important;
-    font-size: 14px;
+    font-size: $button-font-size;
     line-height: 21px;
     font-family: $inter-font-family;
     border-radius: 10px;
@@ -673,7 +715,7 @@ section.home {
 
 @media only screen and (max-width: 992px) {
   .homeStaticPage {
-    margin-top: 20px;
+    margin-top: 0;
     padding-left: 15px !important;
     padding-right: 15px !important;
   }

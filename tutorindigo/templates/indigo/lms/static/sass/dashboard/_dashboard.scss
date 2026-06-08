@@ -245,7 +245,7 @@
             }
             button, input[type="submit"] {
                 width: 100%;
-                font-size: 14px;
+                font-size: $button-font-size;
                 line-height: 20px;
                 border: 1px solid $primary !important;
                 background: $primary !important;
