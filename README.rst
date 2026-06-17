@@ -1,140 +1,115 @@
-Indigo, a cool blue theme for Open edX
-======================================
+FutureX Indigo, a comprehensive Open edX theme
+===============================================
 
-Indigo is an elegant, customizable theme for `Open edX <https://openedx.org>`__.
+A NELC / FutureX comprehensive theme for `Open edX <https://openedx.org>`__, built as a
+flattened version of the `Indigo <https://github.com/overhangio/tutor-indigo>`__ theme.
 
 .. image:: ./screenshots/01-landing-page.png
     :alt: Platform landing page
 
-You can view the theme in action at https://sandbox.openedx.edly.io.
+On top of the base Indigo styling, this theme adds **dynamic, per-tenant rendering**
+("theme_v2"): the landing page, static pages, header, footer, and visual identity are
+rendered at request time from configuration that is authored in the **theme designer**
+(admin UI) and served by
+`futurex-openedx-extensions <https://github.com/nelc/futurex-openedx-extensions>`__. This
+logic lives in the ``fx_templates/`` subtree, documented below.
 
 Installation
 ------------
 
-Indigo was specially developed to be used with `Tutor <https://docs.tutor.edly.io>`__ (at least v14.0.0). If you have not installed Open edX with Tutor, then installation instructions will vary.
+Enable the theme like any Open edX comprehensive theme — point
+``COMPREHENSIVE_THEME_DIRS`` at this repository and set ``indigo`` as the active theme
+(e.g. ``tutor local do settheme indigo`` when running under Tutor). See the upstream
+`tutor-indigo <https://github.com/overhangio/tutor-indigo>`__ project for the stock Indigo
+options (``INDIGO_*`` color settings, dark-mode toggle, etc.).
 
-Install and enable Indigo plugin::
+The ``fx_templates`` architecture
+----------------------------------
 
-    tutor plugins install indigo
-    tutor plugins enable indigo
-    tutor local launch
+The dynamic theme lives in
+``tutorindigo/templates/indigo/lms/templates/fx_templates/``. These are Mako templates
+that render theme content from per-tenant configuration instead of hardcoded markup, so a
+tenant administrator can change the site's pages and branding from the theme designer
+without code changes.
 
-The Indigo theme will be automatically enabled if you have not previously defined a theme. To override an existing theme, use the `settheme command <https://docs.tutor.edly.io/local.html#setting-a-new-theme>`__::
+Data flow
+~~~~~~~~~
 
-    tutor local do settheme indigo
+::
 
-Configuration
--------------
+    theme designer (admin UI)
+        → per-tenant config, stored & served by futurex-openedx-extensions
+        → read at render time via futurex_openedx_extensions.helpers.tenants
+              get_config_current_request()   # page / header / footer / branding config
+              get_fx_theme_css_override()    # CSS override and/or dev CSS
+        → Mako fx_templates
+        → rendered HTML
 
-- ``INDIGO_WELCOME_MESSAGE`` (default: "The place for all your online learning")
-- ``INDIGO_PRIMARY_COLOR`` (default: "#3b85ff")
-- ``INDIGO_FOOTER_NAV_LINKS`` (default: ``[{"title": "About", "url": "/about"}, {"title": "Contact", "url": "/contact"}]``)
-- ``INDIGO_ENABLE_DARK_TOGGLE`` (default: True)
+``fx_static_content.html``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``INDIGO_*`` settings listed above may be modified by running ``tutor config save --set INDIGO_...=...``. For instance, to remove all links from the footer, run::
+The shared helper library. It is imported as the ``fx_static`` namespace by the other
+templates and provides the Mako ``<%def>`` helpers used to fetch configuration values and
+resolve language-aware strings. Every other ``fx_*`` template builds on it.
 
-    tutor config save --set "INDIGO_FOOTER_NAV_LINKS=[]"
+Page / section engine (``fx_page/``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Or, to set the primary color to forest green, run::
+``fx_page/page.html`` is the dispatcher. Given a ``page_name`` and a list of
+``allowed_sections``, it reads that page's config, iterates its ``sections`` list, and for
+each visible section whose ``type`` is allowed it includes ``_section_<type>.html``
+(passing the section data as ``page_contents``). Unknown or unsupported types fall back to
+``_section_invalid.html``.
 
-    # Note: The nested quotes are needed in order to handle the hash (#) correctly.
-    tutor config save --set 'INDIGO_PRIMARY_COLOR="#225522"'
+Each section type has its own partial, suffixed ``_v1`` to denote a versioned section
+schema. Available types: ``hero_section``, ``two_columns``, ``side_image``,
+``featured_courses``, ``static_metrics_section``, ``live_metrics_section``,
+``faq_section``, and ``paragraph_section``.
 
-Theme Toggle Button
--------------------
+Top-level partials
+~~~~~~~~~~~~~~~~~~~
 
-The theme toggle button is enabled by default when Tutor Indigo is installed. The theme can be switched from light to dark and vice versa. To disable it, run::
+- ``fx_home.html`` — renders the home page through the section engine.
+- ``fx_custom_page_template.html`` — renders configurable ``/p/<slug>`` custom pages.
+- ``fx_head_extra.html`` — injects per-tenant branding (colors, meta, social image) into ``<head>``.
+- ``fx_css_override.html`` — loads CSS override and the dev-CSS cookie mechanism.
+- ``fx_header_navbar_links.html`` — header navigation links from config.
+- ``fx_footer_links.html`` / ``fx_footer_social_links.html`` — footer link sections and social icons.
+- ``fx_language_selector.html`` — language selector driven by the tenant's language settings.
+- ``temporary_paragon_fix.html`` — stopgap Paragon CSS-variable fix.
 
-    tutor config save --set INDIGO_ENABLE_DARK_TOGGLE=false
-    tutor images build openedx
-    tutor local start -d
+Integration points
+~~~~~~~~~~~~~~~~~~~
 
+Where the base theme calls into ``fx_templates`` (paths under
+``tutorindigo/templates/indigo/lms/templates/``):
 
-Customization
--------------
+- ``index.html`` → ``fx_home.html``
+- ``head-extra.html`` → ``fx_head_extra.html`` + ``fx_css_override.html``
+- ``footer.html`` → ``fx_footer_links.html`` + ``fx_footer_social_links.html``
+- ``header/*`` → ``fx_header_navbar_links.html`` and ``fx_language_selector.html``
+- ``static_templates/*.html`` → inherit ``main.html`` and include ``fx_page/page.html`` with a ``page_name``
+- ``static_templates/fx_custom_page.html`` → ``fx_custom_page_template.html``
 
-This plugin can serve as a starting point to create your own themes. Just fork this repository and modify the files as you see fit.
+Adding a new section type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You will have to start by installing indigo from source::
+1. Add the type name to the allowed-sections list in ``fx_static_content.html``.
+2. Create ``fx_page/_section_<type>.html`` taking a ``page_contents`` argument.
+3. Have the theme designer emit a section of that ``type`` in the page config.
 
-    git clone https://github.com/overhangio/tutor-indigo.git
-    pip install -e ./tutor-indigo
-    tutor plugins enable indigo
+Styling
+-------
 
-Any change you make to the theme can be viewed immediately in development mode (with `tutor dev ...` commands) after you run::
-
-    tutor config save
-
-To deploy your changes to production, you will have to rebuild the "openedx" Docker image and restart your containers::
-
-    tutor images build openedx
-    tutor local start -d
-
-Changing the Styling in Sass files
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To customize the theme stylesheets, modify the files in the ``tutorindigo/templates/indigo/lms/static/sass/`` and  ``tutorindigo/templates/indigo/cms/static/sass/`` directories. In particular, the ``_extras.scss`` files should contain most styling rules.
-
-
-Changing the default logo and other images
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The theme images are stored in `tutorindigo/templates/indigo/lms/static/images <https://github.com/overhangio/tutor-indigo/tree/release/tutorindigo/templates/indigo/lms/static/images>`__ for the LMS, and in `tutorindigo/templates/indigo/cms/static/images <https://github.com/overhangio/tutor-indigo/tree/release/tutorindigo/templates/indigo/cms/static/images>`__ for the CMS. To use custom images in your theme, just replace the files stored in these folders with your own.
-
-Overriding the default "about", "contact", etc. static pages
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-By default, the ``/about`` and ``/contact`` pages contain a simple line of text: "This page left intentionally blank. Feel free to add your own content". This is of course unusable in production. In the following, we detail how to override just any of the static templates used in Open edX.
-
-The static templates used by Open edX to render those pages are all stored in the `edx-platform/lms/templates/static_templates <https://github.com/edx/edx-platform/tree/open-release/sumac.master/lms/templates/static_templates>`__ folder. To override those templates, you should add your own in the following folder::
-
-    ls tutorindigo/templates/indigo/lms/templates/static_templates"
-
-For instance, edit the "donate.html" file in this directory. We can derive the content of this file from the contents of the `donate.html <https://github.com/edx/edx-platform/blob/open-release/sumac.master/lms/templates/static_templates/donate.html>`__ static template in edx-platform:
-
-.. code-block:: mako
-
-    <%page expression_filter="h"/>
-    <%! from django.utils.translation import gettext as _ %>
-    <%inherit file="../main.html" />
-
-    <%block name="pagetitle">${_("Donate")}</%block>
-
-    <main id="main" aria-label="Content" tabindex="-1">
-        <section class="container about">
-            <h1>
-                <%block name="pageheader">${page_header or _("Donate")}</%block>
-            </h1>
-            <p>
-                <%block name="pagecontent">Add a compelling message here, asking for donations.</%block>
-            </p>
-        </section>
-    </main>
-
-This new template will then be used to render the /donate url.
-
-Troubleshooting
----------------
-
-Can't override styles using Indigo Theme for MFEs
--------------------------------------------------
-
-The indigo theme can’t override styles for MFEs directly. It overrides the styles for edx-platform. In case of MFEs, `@edx/brand <https://github.com/openedx/brand-openedx>`_ is used to override the styles. Customize the ``@edx/brand`` package to your preferences and include this customized package in `tutor-indigo` plugin. In this way, styles can be overidden::
-
-
-    hooks.Filters.ENV_PATCHES.add_item((
-                "mfe-dockerfile-post-npm-install",
-                """
-    RUN npm install '@edx/brand@npm:custom-brand-package'
-    RUN npm install '@edx/brand@git+https://github.com/username/brand-openedx.git#custom-branch'
-    """,
-            ))
-
-
-This Tutor plugin is maintained by Ahmed Khalid and Hammad Yousaf from `Edly <https://edly.io>`__. Community support is available from the official `Open edX forum <https://discuss.openedx.org>`__. Do you need help with this plugin? See the `troubleshooting <https://docs.tutor.edly.io/troubleshooting.html>`__ section from the Tutor documentation.
-
+To customize the static stylesheets, modify the Sass files in
+``tutorindigo/templates/indigo/lms/static/sass/`` and
+``tutorindigo/templates/indigo/cms/static/sass/`` — the ``_extras.scss`` files hold most
+rules. Theme images live under ``tutorindigo/templates/indigo/lms/static/images/`` (and
+the ``cms`` equivalent); replace them with your own to rebrand. Per-tenant CSS can also be
+supplied at runtime through the theme designer (see ``fx_css_override.html`` above).
 
 License
 -------
 
-This work is licensed under the terms of the `GNU Affero General Public License (AGPL) <https://github.com/overhangio/tutor-indigo/blob/release/LICENSE.txt>`_.
+This work is licensed under the terms of the
+`GNU Affero General Public License (AGPL) <https://github.com/overhangio/tutor-indigo/blob/release/LICENSE.txt>`_.
