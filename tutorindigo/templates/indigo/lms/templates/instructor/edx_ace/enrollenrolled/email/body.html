@@ -1,0 +1,31 @@
+{% extends "ace_common/edx_ace/common/fx_base_body.html" %}
+
+{% load i18n %}
+{% load ace %}
+
+{% block preview_text %}{% blocktrans %}You have been enrolled in {{ course_name }}{% endblocktrans %}{% endblock %}
+
+{% block greeting %}
+  {% if full_name %}{% blocktrans with name=full_name %}Hello {{ name }},{% endblocktrans %}{% else %}{% trans "Hello," %}{% endif %}
+{% endblock %}
+
+{% block title %}{% trans "You have been enrolled in" %}{% endblock %}
+
+{% block highlight %}
+  <a href="{% with_link_tracking course_url %}" style="color:inherit;text-decoration:none;">{{ course_name }}</a>
+{% endblock %}
+
+{% block content %}
+  <p style="margin:0;">
+    {% blocktrans %}You have been enrolled in {{ course_name }} at {{ site_name }} by a member of the course staff. This course will now appear on your {{ site_name }} dashboard.{% endblocktrans %}
+  </p>
+{% endblock %}
+
+{% block cta %}
+  {% trans "Access the Course Materials Now" as cta_text %}
+  {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=cta_text fx_cta_url=course_url %}
+{% endblock %}
+
+{% block small_print %}
+  {% blocktrans %}This email was automatically sent from {{ site_name }} to {{ full_name }}{% endblocktrans %}
+{% endblock %}

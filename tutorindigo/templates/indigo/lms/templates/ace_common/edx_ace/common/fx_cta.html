@@ -1,0 +1,12 @@
+{% load ace %}
+{# Filled call-to-action button. Usage: {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=text fx_cta_url=url %} #}
+<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center" bgcolor="#1B8354" style="border-radius:8px;background-color:#1B8354;">
+      <a href="{% with_link_tracking fx_cta_url %}" target="_blank"
+         style="display:inline-block;padding:14px 36px;font-size:15px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
+        <font color="#ffffff"><b>{{ fx_cta_text }}</b></font>
+      </a>
+    </td>
+  </tr>
+</table>

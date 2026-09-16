@@ -683,3 +683,25 @@ msgstr ""
 #: lms/templates/learner_dashboard/program_card.underscore:68
 msgid "Subscribed"
 msgstr ""
+
+#: lms/templates/instructor/edx_ace/enrollenrolled/email/body.html lms/templates/bulk_email/edx_ace/bulkemail/email/body.html
+#, python-format
+msgid "Hello %(name)s,"
+msgstr "Bonjour %(name)s,"
+
+#: lms/templates/instructor/edx_ace/enrollenrolled/email/body.html lms/templates/instructor/edx_ace/allowedenroll/email/body.html lms/templates/bulk_email/edx_ace/bulkemail/email/body.html
+msgid "Hello,"
+msgstr "Bonjour,"
+
+#: lms/templates/instructor/edx_ace/enrollenrolled/email/body.html
+msgid "You have been enrolled in"
+msgstr "Vous avez été inscrit(e) à"
+
+#: lms/templates/instructor/edx_ace/allowedenroll/email/body.html
+msgid "You have been invited to"
+msgstr "Vous avez été invité(e) à"
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#, python-format
+msgid "All rights reserved to %(platform_name)s © %(year)s"
+msgstr "Tous droits réservés à %(platform_name)s © %(year)s"

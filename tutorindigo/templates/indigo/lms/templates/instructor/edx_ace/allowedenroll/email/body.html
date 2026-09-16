@@ -1,0 +1,57 @@
+{% extends "ace_common/edx_ace/common/fx_base_body.html" %}
+
+{% load i18n %}
+{% load ace %}
+
+{% block preview_text %}{% blocktrans %}You have been invited to register for {{ course_name }}{% endblocktrans %}{% endblock %}
+
+{% block greeting %}{% trans "Hello," %}{% endblock %}
+
+{% block title %}{% trans "You have been invited to" %}{% endblock %}
+
+{% block highlight %}{{ course_name }}{% endblock %}
+
+{% block content %}
+  <p style="margin:0;">
+    {% blocktrans %}You have been invited to join {{ course_name }} at {{ site_name }} by a member of the course staff.{% endblocktrans %}
+  </p>
+  {% if is_shib_course %}
+    {% if auto_enroll %}
+      <p style="margin:16px 0 0 0;">{% blocktrans %}To access this course click on the button below and login:{% endblocktrans %}</p>
+    {% elif course_about_url is not None %}
+      <p style="margin:16px 0 0 0;">{% blocktrans %}To access this course visit it and register:{% endblocktrans %}</p>
+    {% endif %}
+  {% else %}
+    <p style="margin:16px 0 0 0;">{% blocktrans %}Please finish your registration and fill out the registration form making sure to use {{ email_address }} in the Email field:{% endblocktrans %}</p>
+  {% endif %}
+{% endblock %}
+
+{% block cta %}
+  {% if is_shib_course %}
+    {% if auto_enroll %}
+      {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=course_name fx_cta_url=course_url %}
+    {% elif course_about_url is not None %}
+      {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=course_name fx_cta_url=course_about_url %}
+    {% endif %}
+  {% else %}
+    {% trans "Finish Your Registration" as button_cta_text %}
+    {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=button_cta_text fx_cta_url=registration_url %}
+  {% endif %}
+{% endblock %}
+
+{% block after_cta %}
+  {% if not is_shib_course %}
+    {% if auto_enroll %}
+      <p style="margin:0;">{% blocktrans %}Once you have registered and activated your account, you will see {{ course_name }} listed on your dashboard.{% endblocktrans %}</p>
+    {% elif course_about_url is not None %}
+      <p style="margin:0 0 16px 0;">{% blocktrans %}Once you have registered and activated your account, you will be able to access this course:{% endblocktrans %}</p>
+      {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=course_name fx_cta_url=course_about_url %}
+    {% else %}
+      <p style="margin:0;">{% blocktrans %}You can then enroll in {{ course_name }}.{% endblocktrans %}</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
+{% block small_print %}
+  {% blocktrans %}This email was automatically sent from {{ site_name }} to {{ email_address }}{% endblocktrans %}
+{% endblock %}
