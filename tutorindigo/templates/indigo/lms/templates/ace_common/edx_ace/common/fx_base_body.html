@@ -1,0 +1,133 @@
+{% load i18n %}
+{% load ace %}
+{% load ednx %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% tenant_get_value "logo_image_url" as fx_logo_image_url %}
+{% tenant_get_value "PLATFORM_NAME" as fx_platform_name %}
+{% get_lms_root_url as fx_lms_root %}
+{% comment %}
+Tenant logo = the theme-editor logo (lms_configs.logo_image_url, what the site header shows), else the
+platform logo. It is used only when absolute http(s) and not SVG (Gmail/Outlook do not render SVG). A
+root-relative value is what the browser resolves against the tenant host; emails need it absolute, so
+the tenant root is prefixed first. Tenant name = lms_configs.PLATFORM_NAME, the same key the stock
+emails use, falling back to the context's platform_name.
+{% endcomment %}
+{% if fx_logo_image_url|slice:":1" == "/" %}{% firstof fx_lms_root|add:fx_logo_image_url as fx_logo_abs %}{% else %}{% firstof fx_logo_image_url as fx_logo_abs %}{% endif %}
+{% if fx_logo_abs|slice:":4" == "http" and fx_logo_abs|lower|slice:"-4:" != ".svg" %}{% firstof fx_logo_abs as fx_tenant_logo %}{% else %}{% firstof "" as fx_tenant_logo %}{% endif %}
+{% now "Y" as fx_year %}
+
+{# Inbox preview text: visible in the message list of most clients, hidden in the body. #}
+<div lang="{{ LANGUAGE_CODE|default:"en" }}" style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;visibility:hidden;">
+  {% block preview_text %}{% endblock %}
+</div>
+
+{% for image_src in channel.tracker_image_sources %}
+  <img src="{{ image_src }}" alt="" role="presentation" aria-hidden="true" />
+{% endfor %}
+
+{% google_analytics_tracking_pixel %}
+
+<div bgcolor="#f3f4f6" lang="{{ LANGUAGE_CODE|default:"en" }}" dir="{{ LANGUAGE_BIDI|yesno:"rtl,ltr" }}" style="margin:0;padding:24px 12px;min-width:100%;background-color:#f3f4f6;">
+  <!--[if mso]>
+  <style type="text/css">
+  body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
+  </style>
+  <![endif]-->
+
+  <!--[if (gte mso 9)|(IE)]>
+  <table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+  <td>
+  <![endif]-->
+
+  <!-- CARD -->
+  <table class="content" role="presentation" align="center" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff"
+    style="max-width:600px;margin:0 auto;background-color:#ffffff;border:1px solid #e5e7eb;border-radius:12px;font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,Arial,Helvetica,sans-serif;">
+
+    <!-- LOGO -->
+    <tr>
+      <td align="center" style="padding:36px 32px 8px 32px;">
+        {% if fx_tenant_logo %}
+          <img src="{{ fx_tenant_logo }}" alt="{% firstof fx_platform_name platform_name %}" height="56" style="display:block;margin:0 auto;max-height:56px;max-width:220px;width:auto;height:auto;border:0;" />
+        {% elif logo_url %}
+          <img src="{{ logo_url }}" alt="{% firstof fx_platform_name platform_name %}" height="56" style="display:block;margin:0 auto;max-height:56px;max-width:220px;width:auto;height:auto;border:0;" />
+        {% endif %}
+      </td>
+    </tr>
+
+    <!-- GREETING -->
+    <tr>
+      <td style="padding:16px 32px 0 32px;text-align:center;font-size:16px;line-height:24px;color:#4b5563;">
+        {% block greeting %}{% endblock %}
+      </td>
+    </tr>
+
+    <!-- TITLE -->
+    <tr>
+      <td style="padding:12px 32px 0 32px;text-align:center;font-size:24px;line-height:32px;font-weight:700;color:#111827;">
+        {% block title %}{% endblock %}
+      </td>
+    </tr>
+
+    <!-- HIGHLIGHT (course / program name) -->
+    <tr>
+      <td style="padding:8px 32px 0 32px;text-align:center;font-size:18px;line-height:28px;font-weight:600;color:#1B8354;">
+        {% block highlight %}{% endblock %}
+      </td>
+    </tr>
+
+    <!-- CONTENT -->
+    <tr>
+      <td style="padding:16px 32px 0 32px;text-align:center;font-size:15px;line-height:24px;color:#374151;">
+        {% block content %}{% endblock %}
+      </td>
+    </tr>
+
+    <!-- CTA -->
+    <tr>
+      <td align="center" style="padding:24px 32px 8px 32px;">
+        {% block cta %}{% endblock %}
+      </td>
+    </tr>
+
+    <!-- AFTER CTA (follow-up paragraphs, optional) -->
+    <tr>
+      <td style="padding:8px 32px 0 32px;text-align:center;font-size:15px;line-height:24px;color:#374151;">
+        {% block after_cta %}{% endblock %}
+      </td>
+    </tr>
+
+    <!-- SMALL PRINT -->
+    <tr>
+      <td style="padding:16px 32px 0 32px;text-align:center;font-size:12px;line-height:18px;color:#6b7280;">
+        {% block small_print %}{% endblock %}
+      </td>
+    </tr>
+
+    <!-- DIVIDER -->
+    <tr>
+      <td style="padding:24px 32px 0 32px;">
+        <div style="border-top:1px solid #e5e7eb;font-size:0;line-height:0;">&nbsp;</div>
+      </td>
+    </tr>
+
+    <!-- COPYRIGHT -->
+    <tr>
+      <td align="center" style="padding:16px 32px 32px 32px;text-align:center;font-size:12px;line-height:18px;color:#6b7280;">
+        {% blocktrans with platform_name=fx_platform_name|default:platform_name year=fx_year %}All rights reserved to {{ platform_name }} © {{ year }}{% endblocktrans %}
+      </td>
+    </tr>
+  </table>
+
+  <!--[if (gte mso 9)|(IE)]>
+  </td>
+  </tr>
+  </table>
+  <![endif]-->
+</div>
+
+{# Debug info that is not user-visible #}
+<span id="ace-message-id" style="display:none;">{{ message.log_id }}</span>
+<span id="template-revision" style="display:none;">{{ template_revision }}</span>
+<span id="fx-email-frame" style="display:none;">indigo/fx_base_body</span>

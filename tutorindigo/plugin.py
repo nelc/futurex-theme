@@ -61,6 +61,23 @@ hooks.Filters.ENV_PATTERNS_INCLUDE.add_items(
     ]
 )
 
+# Django templates (edx-ace emails) and compiled gettext catalogs must not go through Tutor's
+# Jinja pass: locally Jinja would choke on {% blocktrans %} / {% include %}, and production
+# builds clone this repo raw (PICASSO_THEME_DIRS) where Jinja never runs, so {% raw %} wrappers
+# would reach Django verbatim. Copy them byte-for-byte in both worlds.
+FX_VERBATIM_TEMPLATE_PREFIXES = (
+    "indigo/lms/templates/ace_common/",
+    "indigo/lms/templates/instructor/edx_ace/",
+    "indigo/lms/templates/bulk_email/",
+)
+
+
+@hooks.Filters.IS_FILE_RENDERED.add()
+def _do_not_render_django_email_templates(rendered: bool, path: str) -> bool:
+    if path.startswith(FX_VERBATIM_TEMPLATE_PREFIXES) or path.endswith(".mo"):
+        return False
+    return rendered
+
 
 # init script: set theme automatically
 with open(

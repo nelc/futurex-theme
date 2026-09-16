@@ -1,0 +1,48 @@
+{% extends "ace_common/edx_ace/common/fx_base_body.html" %}
+
+{% load i18n %}
+{% load ace %}
+
+{% block preview_text %}{{ course_email.subject }}{% endblock %}
+
+{% block greeting %}
+  {% if name %}{% blocktrans %}Hello {{ name }},{% endblocktrans %}{% else %}{% trans "Hello," %}{% endif %}
+{% endblock %}
+
+{% block title %}{{ course_email.subject }}{% endblock %}
+
+{% block highlight %}
+  <a href="{{ course_url }}" style="color:inherit;text-decoration:none;">{{ course_title }}</a>
+{% endblock %}
+
+{% block content %}
+  {% autoescape off %}
+    {{ formatted_html_message }}
+  {% endautoescape %}
+{% endblock %}
+
+{% block cta %}
+  {% trans "Go to course" as cta_text %}
+  {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=cta_text fx_cta_url=course_url %}
+{% endblock %}
+
+{% block small_print %}
+        {% filter force_escape %}
+          {% blocktrans %}
+            This email was automatically sent from {{ platform_name }}.
+          {% endblocktrans %}
+        {% endfilter %}
+        <br>
+        {% filter force_escape %}
+          {% blocktrans %}
+            You are receiving this email at address {{ email }} because you are enrolled in
+          {% endblocktrans %}
+        {% endfilter %} <a href='{{ course_url }}'>{{ course_title }}</a>.
+        <br>
+        {% filter force_escape %}
+          {% blocktrans %}
+            To stop receiving email like this, update your course email settings
+          {% endblocktrans %}
+        {% endfilter %} <a href='{{ email_settings_url }}'>{% trans "here" as transhere %}{{transhere|force_escape}}</a>.
+        <br><a href='{{ unsubscribe_link }}'>{% trans "unsubscribe" as transunsub %}{{transunsub|force_escape}}</a>
+{% endblock %}
