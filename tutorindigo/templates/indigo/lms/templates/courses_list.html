@@ -9,7 +9,13 @@ elif fx_grid_type in ['max-3', 'max-6', 'max-9']:
 else:
     homepage_course_max = 9999
 
-no_courses = not courses
+# List only courses whose enrolment is open and that have not ended
+homepage_courses = []
+for course_item in courses:
+    if course_item.is_enrollment_open() and not course_item.has_ended():
+        homepage_courses.append(course_item)
+
+no_courses = not homepage_courses
 %>
 
 <div class="row platformMainWrap pt-0 px-0 pb-0 justify-content-center align-items-center">
@@ -20,10 +26,10 @@ no_courses = not courses
         </div>
     </div>
 % elif settings.FEATURES.get('COURSES_ARE_BROWSABLE'):
-    %for course in courses[:homepage_course_max]:
+    %for course in homepage_courses[:homepage_course_max]:
         <%include file="course.html" args="course=course, source_page='main_page'" />
     %endfor
-    % if homepage_course_max and len(courses) > homepage_course_max:
+    % if homepage_course_max and len(homepage_courses) > homepage_course_max:
     <div class="btnWtapper">
         <a href="${marketing_link('COURSES')}" class="btnWtapper__action">${_("Browse all courses")}</a>
     </div>
