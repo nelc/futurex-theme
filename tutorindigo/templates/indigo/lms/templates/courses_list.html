@@ -1,5 +1,8 @@
-<%page args="fx_grid_type" expression_filter="h"/>
-<%! from django.utils.translation import gettext as _ %>
+<%page args="fx_grid_type, fx_tabs=None" expression_filter="h"/><%namespace name='fx_static' file='fx_templates/fx_static_content.html'/>
+<%!
+import json
+from django.utils.translation import gettext as _
+%>
 
 <%
 if fx_grid_type == 'categorised':
@@ -16,6 +19,27 @@ for course_item in courses:
         homepage_courses.append(course_item)
 
 no_courses = not homepage_courses
+
+# Homepage tabs apply to the categorised grid only. The stored config is trusted
+# for nothing: anything malformed, disabled or unlabelled is skipped, and a tab
+# with no open course is hidden. "All" is synthesized in the markup, never stored.
+visible_tabs = []
+if fx_grid_type == 'categorised' and isinstance(fx_tabs, dict) and fx_tabs.get('enabled') is True:
+    open_course_ids = {str(c.id) for c in homepage_courses}
+    seen_tab_ids = {'all'}
+    tab_items = fx_tabs.get('items')
+    for tab_item in tab_items if isinstance(tab_items, list) else []:
+        if not isinstance(tab_item, dict) or tab_item.get('enabled') is not True:
+            continue
+        tab_id = tab_item.get('id')
+        tab_name = fx_static.t(tab_item.get('name'))
+        tab_course_ids = tab_item.get('course_ids')
+        if not isinstance(tab_id, str) or not tab_id or tab_id in seen_tab_ids or not tab_name or not isinstance(tab_course_ids, list):
+            continue
+        seen_tab_ids.add(tab_id)
+        tab_course_ids = [i for i in tab_course_ids if isinstance(i, str)]
+        if open_course_ids.intersection(tab_course_ids):
+            visible_tabs.append({'id': tab_id, 'name': tab_name, 'course_ids': tab_course_ids})
 %>
 
 <div class="row platformMainWrap pt-0 px-0 pb-0 justify-content-center align-items-center">
@@ -26,10 +50,61 @@ no_courses = not homepage_courses
         </div>
     </div>
 % elif settings.FEATURES.get('COURSES_ARE_BROWSABLE'):
+    % if visible_tabs:
+    <div class="col-12 fxTabs">
+        <div class="fxTabs__bar" role="group" aria-label="${fx_static.t({'ar': 'تصفية الدورات', 'en': 'Filter courses', 'fr': 'Filtrer les cours'})}" data-fx-tabs-bar hidden>
+            <button type="button" class="fxTabs__pill" data-fx-tab="all" aria-pressed="true">${fx_static.t({'ar': 'الكل', 'en': 'All', 'fr': 'Tous'})}</button>
+            % for tab in visible_tabs:
+            <button type="button" class="fxTabs__pill" data-fx-tab="${tab['id']}" data-fx-ids="${json.dumps(tab['course_ids'])}" aria-pressed="false">${tab['name']}</button>
+            % endfor
+        </div>
+        <p class="fxTabs__status" role="status" aria-live="polite" data-fx-tabs-status data-fx-tabs-status-text="${fx_static.t({'ar': 'عدد الدورات المعروضة: {count}', 'en': 'Courses shown: {count}', 'fr': 'Cours affichés : {count}'})}"></p>
+    </div>
+    % endif
     %for course in homepage_courses[:homepage_course_max]:
-        <%include file="course.html" args="course=course, source_page='main_page'" />
+        <%include file="course.html" args="course=course, source_page='main_page', tab_course_id=str(course.id) if visible_tabs else None" />
     %endfor
-    % if homepage_course_max and len(homepage_courses) > homepage_course_max:
+    % if visible_tabs:
+    <script>
+    (function (row) {
+        var bar = row.querySelector('[data-fx-tabs-bar]');
+        var status = row.querySelector('[data-fx-tabs-status]');
+        var pills = [].slice.call(bar.querySelectorAll('[data-fx-tab]'));
+        var cards = [].slice.call(row.querySelectorAll('[data-fx-course-id]'));
+        var members = {};
+        pills.forEach(function (pill) {
+            members[pill.getAttribute('data-fx-tab')] = JSON.parse(pill.getAttribute('data-fx-ids') || '[]');
+        });
+        function apply(tabId, announce) {
+            var shown = 0;
+            pills.forEach(function (pill) {
+                pill.setAttribute('aria-pressed', String(pill.getAttribute('data-fx-tab') === tabId));
+            });
+            cards.forEach(function (card) {
+                var visible = tabId === 'all' || members[tabId].indexOf(card.getAttribute('data-fx-course-id')) !== -1;
+                card.hidden = !visible;
+                if (visible) { shown += 1; }
+            });
+            if (announce) {
+                status.textContent = status.getAttribute('data-fx-tabs-status-text').replace('{count}', shown);
+            }
+        }
+        pills.forEach(function (pill) {
+            pill.addEventListener('click', function () {
+                var tabId = pill.getAttribute('data-fx-tab');
+                apply(tabId, true);
+                var url = new URL(window.location.href);
+                if (tabId === 'all') { url.searchParams.delete('tab'); } else { url.searchParams.set('tab', tabId); }
+                history.replaceState(null, '', url);
+            });
+        });
+        bar.hidden = false;
+        var wanted = new URL(window.location.href).searchParams.get('tab');
+        if (wanted && Object.prototype.hasOwnProperty.call(members, wanted)) { apply(wanted, false); }
+    })(document.currentScript.parentNode);
+    </script>
+    % endif
+    % if homepage_course_max and len(homepage_courses) > homepage_course_max and not visible_tabs:
     <div class="btnWtapper">
         <a href="${marketing_link('COURSES')}" class="btnWtapper__action">${_("Browse all courses")}</a>
     </div>
