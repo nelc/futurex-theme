@@ -4,7 +4,7 @@
 from django.utils.translation import gettext as _
 from django.urls import reverse
 %>
-<%page args="course, source_page=''" expression_filter="h"/>
+<%page args="course, source_page='', tab_course_id=None" expression_filter="h"/>
 
 <%
 if course.start is not None:
@@ -55,7 +55,11 @@ else:
 
 % else:
 
+% if tab_course_id:
+<div class="col-sm-4 mb-4" data-fx-course-id="${tab_course_id}">
+% else:
 <div class="col-sm-4 mb-4">
+% endif
     <div class="newCard">
         <div class="newCard__detailWrap">
             <div class="newCard__detail">

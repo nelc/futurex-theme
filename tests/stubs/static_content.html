@@ -1,0 +1,3 @@
+## Test stub for the platform's static_content.html (only what course.html uses).
+<%def name="url(path)">/static/${path}</%def>
+<%def name="require_module_async(module_name, class_name)"><script>${caller.body()}</script></%def>

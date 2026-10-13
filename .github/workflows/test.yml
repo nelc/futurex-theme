@@ -2,7 +2,7 @@ name: Run tests
 
 on:
   pull_request:
-    branches: [ release, main ]
+    branches: [ release, main, open-release/teak.nelp ]
   push:
     branches: [ release, main ]
 
@@ -20,3 +20,7 @@ jobs:
           pip install .[dev]
       - name: Test lint, types, and format
         run: make test
+      - name: Test homepage template rendering
+        run: |
+          pip install mako
+          python -m unittest discover -s tests -v
