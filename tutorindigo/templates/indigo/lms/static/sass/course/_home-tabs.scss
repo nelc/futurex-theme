@@ -3,11 +3,20 @@
 .fxTabs {
   margin-block-end: 24px;
 
+  // Segmented control: one white rounded bar, the tabs share its width, the active one is filled.
+  // `!important` is needed against the theme's global button styles.
   &__bar {
     display: flex;
     flex-wrap: wrap;
+    justify-content: space-around;
     gap: 8px;
-    justify-content: center;
+    max-width: 100%;
+    margin: auto;
+    padding: 5px;
+    background: #fff;
+    border-radius: 12px !important;
+    box-shadow: 0 0 2px 0 #c9c9c9;
+    font-weight: 500 !important;
     // The bar ships with the `hidden` attribute; the inline script reveals it (no JS = all cards).
     &[hidden] {
       display: none;
@@ -15,28 +24,34 @@
   }
 
   &__pill {
-    flex: none;
+    flex: 1;
+    width: 25%;
+    min-width: fit-content;
     min-block-size: 44px;
-    padding-block: 8px;
-    padding-inline: 20px;
-    border: 1px solid var(--main-primary-color);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--main-primary-color);
+    padding: 10px 12px;
+    border: none !important;
+    border-radius: 12px;
+    background: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    color: #041212 !important;
     font-size: 16px;
     line-height: 1.25;
+    text-align: center;
     white-space: nowrap;
     cursor: pointer;
+    transition: 0.3s;
 
+    // Keyboard focus stays visible (the design's `outline: none` would hide it).
     &:focus-visible {
-      outline: 3px solid var(--main-primary-color);
+      outline: 3px solid #1b8354;
       outline-offset: 2px;
     }
 
-    // Active state is a filled pill with heavier text, not colour alone (plus aria-pressed).
+    // Active state is a filled tab with heavier text, not colour alone (plus aria-pressed).
     &[aria-pressed="true"] {
-      background: var(--main-primary-color);
-      color: #fff;
+      background: #1b8354 !important;
+      color: #fff !important;
       font-weight: 700;
     }
   }
