@@ -1,0 +1,25 @@
+{% extends "ace_common/edx_ace/common/fx_base_body.html" %}
+{% comment %}
+Branded Message 3, learning starts. Context from eox_nelp.learner_emails.tasks: full_name, course_name, course_url.
+{% endcomment %}
+{% load i18n %}
+
+{% block preview_text %}{% trans "The program content is now available to you" %}{% endblock %}
+
+{% block greeting %}{% if full_name %}{% blocktrans %}Hello {{ full_name }},{% endblocktrans %}{% else %}{% trans "Hello," %}{% endif %}{% endblock %}
+
+{% block title %}{% trans "The program content is now available to you" %}{% endblock %}
+
+{% block program_box %}
+  {% include "ace_common/edx_ace/common/fx_program_box.html" with fx_program_name=course_name %}
+{% endblock %}
+
+{% block content %}
+  <p style="margin:0;">{% trans "Your journey to a new skill starts now." %}</p>
+  <p style="margin:16px 0 0 0;">{% trans "Join the discussion space — your learning multiplies when ideas are exchanged." %}</p>
+{% endblock %}
+
+{% block cta %}
+  {% trans "Start learning" as button_cta_text %}
+  {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=button_cta_text fx_cta_url=course_url %}
+{% endblock %}

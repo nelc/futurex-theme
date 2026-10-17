@@ -1,0 +1,1 @@
+{% load i18n %}{% load tz %}{% autoescape off %}{% now "U" as fx_now %}{% if course.start|date:"U"|add:"0" > fx_now|add:"0" %}{% blocktrans %}You are registered in {{ course_name }}{% endblocktrans %}{% else %}{% trans "You are registered — start your learning journey now" %}{% endif %}{% endautoescape %}

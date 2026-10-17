@@ -710,3 +710,127 @@ msgstr "Tous droits réservés à %(platform_name)s © %(year)s"
 #: lms/templates/courseware/course_about.html
 msgid "You must complete the following courses first:"
 msgstr "Vous devez d’abord terminer les cours suivants :"
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+#, python-format
+msgid "© %(year)s %(platform_name)s. All rights reserved."
+msgstr "© %(year)s %(platform_name)s. Tous droits réservés."
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+#, python-format
+msgid "Congratulations %(full_name)s!"
+msgstr "Félicitations %(full_name)s !"
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+msgid "You have successfully completed the program"
+msgstr "Vous avez terminé le programme avec succès"
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+msgid "Your certificate is ready to download."
+msgstr "Votre certificat est prêt à être téléchargé."
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+msgid "Download your certificate"
+msgstr "Télécharger votre certificat"
+
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+msgid "Congratulations!"
+msgstr "Félicitations !"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Hello %(full_name)s,"
+msgstr "Bonjour %(full_name)s,"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Invitation: %(course_name)s"
+msgstr "Invitation : %(course_name)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Invitation: %(course_name)s program"
+msgstr "Invitation : programme %(course_name)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You are invited to join a new program"
+msgstr "Vous êtes invité(e) à rejoindre un nouveau programme"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Starts: %(date)s"
+msgstr "Début : %(date)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Duration: %(effort)s"
+msgstr "Durée : %(effort)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Register now"
+msgstr "S'inscrire maintenant"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "You are registered in %(course_name)s"
+msgstr "Vous êtes inscrit(e) à %(course_name)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You have been registered successfully"
+msgstr "Votre inscription a bien été enregistrée"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "You will find the program on your dashboard. You can start: %(date)s"
+msgstr "Vous trouverez le programme dans votre tableau de bord. Vous pouvez commencer le : %(date)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Go to the program"
+msgstr "Accéder au programme"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You are registered — start your learning journey now"
+msgstr "Vous êtes inscrit(e) — commencez votre parcours d'apprentissage maintenant"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You are registered, and the content is available now"
+msgstr "Vous êtes inscrit(e) et le contenu est disponible dès maintenant"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Your journey to a new skill starts now."
+msgstr "Votre parcours vers une nouvelle compétence commence maintenant."
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Start learning"
+msgstr "Commencer l'apprentissage"
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+msgid "The program content is now available to you"
+msgstr "Le contenu du programme est maintenant disponible"
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+msgid "Join the discussion space — your learning multiplies when ideas are exchanged."
+msgstr "Participez à l'espace de discussion — l'échange d'idées décuple votre apprentissage."
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+msgid "Only a little left to complete your program"
+msgstr "Plus que quelques efforts pour terminer votre programme"
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+#, python-format
+msgid "You have completed %(completed_percent)s%% — well done!"
+msgstr "Vous avez accompli %(completed_percent)s %% — bravo !"
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+#, python-format
+msgid "Remaining: %(remaining_percent)s%%"
+msgstr "Restant : %(remaining_percent)s %%"
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+msgid "Complete now"
+msgstr "Terminer maintenant"

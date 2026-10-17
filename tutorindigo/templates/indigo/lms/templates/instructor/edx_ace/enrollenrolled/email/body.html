@@ -1,31 +1,34 @@
 {% extends "ace_common/edx_ace/common/fx_base_body.html" %}
-
+{% comment %}
+Messages 2 and 4 share the stock enrollenrolled message. fx_not_started (set by the frame from
+course.start) picks the wording: course not started yet = Message 2 (confirmation, with the start date),
+already open or no start date = Message 4 (registered, start now). The API notices of 2026-10-14 send
+this same message type with the same context keys (course, course_name, course_url, full_name).
+{% endcomment %}
 {% load i18n %}
-{% load ace %}
+{% load tz %}
 
-{% block preview_text %}{% blocktrans %}You have been enrolled in {{ course_name }}{% endblocktrans %}{% endblock %}
+{% block preview_text %}{% if fx_not_started %}{% trans "You have been registered successfully" %}{% else %}{% trans "You are registered, and the content is available now" %}{% endif %}{% endblock %}
 
-{% block greeting %}
-  {% if full_name %}{% blocktrans with name=full_name %}Hello {{ name }},{% endblocktrans %}{% else %}{% trans "Hello," %}{% endif %}
-{% endblock %}
+{% block greeting %}{% if full_name %}{% blocktrans %}Hello {{ full_name }},{% endblocktrans %}{% else %}{% trans "Hello," %}{% endif %}{% endblock %}
 
-{% block title %}{% trans "You have been enrolled in" %}{% endblock %}
+{% block title %}{% if fx_not_started %}{% trans "You have been registered successfully" %}{% else %}{% trans "You are registered, and the content is available now" %}{% endif %}{% endblock %}
 
-{% block highlight %}
-  <a href="{% with_link_tracking course_url %}" style="color:inherit;text-decoration:none;">{{ course_name }}</a>
+{% block program_box %}
+  {% include "ace_common/edx_ace/common/fx_program_box.html" with fx_program_name=course_name %}
 {% endblock %}
 
 {% block content %}
   <p style="margin:0;">
-    {% blocktrans %}You have been enrolled in {{ course_name }} at {{ site_name }} by a member of the course staff. This course will now appear on your {{ site_name }} dashboard.{% endblocktrans %}
+    {% if fx_not_started %}
+      {% timezone "Asia/Riyadh" %}{% blocktrans with date=course.start|date:"DATE_FORMAT" %}You will find the program on your dashboard. You can start: {{ date }}{% endblocktrans %}{% endtimezone %}
+    {% else %}
+      {% trans "Your journey to a new skill starts now." %}
+    {% endif %}
   </p>
 {% endblock %}
 
 {% block cta %}
-  {% trans "Access the Course Materials Now" as cta_text %}
-  {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=cta_text fx_cta_url=course_url %}
-{% endblock %}
-
-{% block small_print %}
-  {% blocktrans %}This email was automatically sent from {{ site_name }} to {{ full_name }}{% endblocktrans %}
+  {% if fx_not_started %}{% trans "Go to the program" as button_cta_text %}{% else %}{% trans "Start learning" as button_cta_text %}{% endif %}
+  {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=button_cta_text fx_cta_url=course_url %}
 {% endblock %}

@@ -1,57 +1,49 @@
 {% extends "ace_common/edx_ace/common/fx_base_body.html" %}
-
+{% comment %}
+Message 1, invitation (an email with no account yet). Registration is the call to action.
+The greeting has no name: the person has no account, so there is none to use.
+Start date and duration (the course Effort field, formatted as hours by the eox_nelp_tags
+effort_hours filter) are shown only when set. The "accredited certificate" sentence is the tenant
+setting ACCREDITED_CERTIFICATE_TEXT = {"ar": "...", "en": "...", "fr": "..."}: the value of the
+email's own language is shown, and the line is hidden when that language has none (no other
+language's sentence is borrowed). Dates are shown in Asia/Riyadh for every tenant (owner decision
+cr-email-timezone).
+Context keys are the stock ones (course_name, course, registration_url, is_shib_course, ...).
+{% endcomment %}
 {% load i18n %}
-{% load ace %}
+{% load tz %}
+{% load ednx %}
+{% load eox_nelp_tags %}
 
-{% block preview_text %}{% blocktrans %}You have been invited to register for {{ course_name }}{% endblocktrans %}{% endblock %}
+{% block preview_text %}{% blocktrans %}Invitation: {{ course_name }}{% endblocktrans %}{% endblock %}
 
 {% block greeting %}{% trans "Hello," %}{% endblock %}
 
-{% block title %}{% trans "You have been invited to" %}{% endblock %}
+{% block title %}{% trans "You are invited to join a new program" %}{% endblock %}
 
-{% block highlight %}{{ course_name }}{% endblock %}
+{% block program_box %}
+  {% include "ace_common/edx_ace/common/fx_program_box.html" with fx_program_name=course_name %}
+{% endblock %}
 
 {% block content %}
+  {% tenant_get_value "ACCREDITED_CERTIFICATE_TEXT" as fx_accredited_by_language %}
+    {% firstof course.effort|effort_hours as fx_effort %}
+  {% comment %}Facts line: only the facts that exist, separated by a bullet (fx_sep is set once one is shown).{% endcomment %}
   <p style="margin:0;">
-    {% blocktrans %}You have been invited to join {{ course_name }} at {{ site_name }} by a member of the course staff.{% endblocktrans %}
+    {% if course.start %}{% timezone "Asia/Riyadh" %}{% blocktrans with date=course.start|date:"DATE_FORMAT" %}Starts: {{ date }}{% endblocktrans %}{% endtimezone %}{% firstof "1" as fx_sep %}{% endif %}
+    {% if fx_effort %}{% if fx_sep %} &bull; {% endif %}{% blocktrans with effort=fx_effort %}Duration: {{ effort }}{% endblocktrans %}{% firstof "1" as fx_sep %}{% endif %}
+    {% comment %}A template cannot index a dict by a variable key, so loop and print the email's language (last item: a loop cannot set variables for later).{% endcomment %}
+    {% for fx_code, fx_text in fx_accredited_by_language.items %}{% if fx_code == LANGUAGE_CODE and fx_text %}{% if fx_sep %} &bull; {% endif %}{{ fx_text }}{% endif %}{% endfor %}
   </p>
-  {% if is_shib_course %}
-    {% if auto_enroll %}
-      <p style="margin:16px 0 0 0;">{% blocktrans %}To access this course click on the button below and login:{% endblocktrans %}</p>
-    {% elif course_about_url is not None %}
-      <p style="margin:16px 0 0 0;">{% blocktrans %}To access this course visit it and register:{% endblocktrans %}</p>
-    {% endif %}
-  {% else %}
-    <p style="margin:16px 0 0 0;">{% blocktrans %}Please finish your registration and fill out the registration form making sure to use {{ email_address }} in the Email field:{% endblocktrans %}</p>
-  {% endif %}
 {% endblock %}
 
 {% block cta %}
-  {% if is_shib_course %}
-    {% if auto_enroll %}
-      {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=course_name fx_cta_url=course_url %}
-    {% elif course_about_url is not None %}
-      {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=course_name fx_cta_url=course_about_url %}
-    {% endif %}
+  {% trans "Register now" as button_cta_text %}
+  {% if is_shib_course and auto_enroll %}
+    {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=button_cta_text fx_cta_url=course_url %}
+  {% elif is_shib_course and course_about_url is not None %}
+    {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=button_cta_text fx_cta_url=course_about_url %}
   {% else %}
-    {% trans "Finish Your Registration" as button_cta_text %}
     {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=button_cta_text fx_cta_url=registration_url %}
   {% endif %}
-{% endblock %}
-
-{% block after_cta %}
-  {% if not is_shib_course %}
-    {% if auto_enroll %}
-      <p style="margin:0;">{% blocktrans %}Once you have registered and activated your account, you will see {{ course_name }} listed on your dashboard.{% endblocktrans %}</p>
-    {% elif course_about_url is not None %}
-      <p style="margin:0 0 16px 0;">{% blocktrans %}Once you have registered and activated your account, you will be able to access this course:{% endblocktrans %}</p>
-      {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=course_name fx_cta_url=course_about_url %}
-    {% else %}
-      <p style="margin:0;">{% blocktrans %}You can then enroll in {{ course_name }}.{% endblocktrans %}</p>
-    {% endif %}
-  {% endif %}
-{% endblock %}
-
-{% block small_print %}
-  {% blocktrans %}This email was automatically sent from {{ site_name }} to {{ email_address }}{% endblocktrans %}
 {% endblock %}

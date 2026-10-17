@@ -1,0 +1,10 @@
+{% load i18n %}{% get_current_language as LANGUAGE_CODE %}{% load tz %}{% load ednx %}{% load eox_nelp_tags %}{% autoescape off %}{% trans "Hello," %}
+
+{% trans "You are invited to join a new program" %}
+{{ course_name }}
+{% tenant_get_value "ACCREDITED_CERTIFICATE_TEXT" as fx_by_language %}{% firstof course.effort|effort_hours as fx_effort %}{% if course.start %}{% timezone "Asia/Riyadh" %}{% blocktrans with date=course.start|date:"DATE_FORMAT" %}Starts: {{ date }}{% endblocktrans %}{% endtimezone %}
+{% endif %}{% if fx_effort %}{% blocktrans with effort=fx_effort %}Duration: {{ effort }}{% endblocktrans %}
+{% endif %}{% for fx_code, fx_text in fx_by_language.items %}{% if fx_code == LANGUAGE_CODE and fx_text %}{{ fx_text }}
+{% endif %}{% endfor %}
+{% trans "Register now" %}: {% if is_shib_course and auto_enroll %}{{ course_url }}{% elif is_shib_course and course_about_url is not None %}{{ course_about_url }}{% else %}{{ registration_url }}{% endif %}
+{% endautoescape %}
