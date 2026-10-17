@@ -1,0 +1,12 @@
+{% load i18n %}{% load tz %}{% autoescape off %}{% now "U" as fx_now %}{% if full_name %}{% blocktrans %}Hello {{ full_name }},{% endblocktrans %}{% else %}{% trans "Hello," %}{% endif %}
+
+{% if course.start|date:"U"|add:"0" > fx_now|add:"0" %}{% trans "You have been registered successfully" %}
+{{ course_name }}
+{% timezone "Asia/Riyadh" %}{% blocktrans with date=course.start|date:"DATE_FORMAT" %}You will find the program on your dashboard. You can start: {{ date }}{% endblocktrans %}{% endtimezone %}
+
+{% trans "Go to the program" %}: {{ course_url }}{% else %}{% trans "You are registered, and the content is available now" %}
+{{ course_name }}
+{% trans "Your journey to a new skill starts now." %}
+
+{% trans "Start learning" %}: {{ course_url }}{% endif %}
+{% endautoescape %}
