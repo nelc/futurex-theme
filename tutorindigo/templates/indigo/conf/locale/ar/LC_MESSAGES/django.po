@@ -705,3 +705,30 @@ msgstr "لقد تمت دعوتك إلى"
 #, python-format
 msgid "All rights reserved to %(platform_name)s © %(year)s"
 msgstr "جميع الحقوق محفوظة لـ%(platform_name)s © %(year)s"
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+#, python-format
+msgid "© %(year)s %(platform_name)s. All rights reserved."
+msgstr "© %(year)s %(platform_name)s. جميع الحقوق محفوظة."
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+#, python-format
+msgid "Congratulations %(full_name)s!"
+msgstr "مبروك %(full_name)s!"
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+msgid "You have successfully completed the program"
+msgstr "أتممت البرنامج بنجاح"
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+msgid "Your certificate is ready to download."
+msgstr "شهادتك جاهزة للتحميل."
+
+#: lms/templates/ace_common/edx_ace/common/fx_base_body.html
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+msgid "Download your certificate"
+msgstr "حمّل شهادتك"

@@ -69,6 +69,7 @@ FX_VERBATIM_TEMPLATE_PREFIXES = (
     "indigo/lms/templates/ace_common/",
     "indigo/lms/templates/instructor/edx_ace/",
     "indigo/lms/templates/bulk_email/",
+    "indigo/lms/templates/eox_nelp/",
 )
 
 
