@@ -1,0 +1,1 @@
+{% load i18n %}{% autoescape off %}{% blocktrans %}Invitation: {{ course_name }} program{% endblocktrans %}{% endautoescape %}

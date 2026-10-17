@@ -1,0 +1,26 @@
+{% extends "ace_common/edx_ace/common/fx_base_body.html" %}
+{% comment %}
+Branded "your certificate is ready" e-mail. eox-nelp ships the same template path with a default look
+(and the subject, text and from-name parts); this file only replaces the HTML body for tenants whose
+theme is this one. Context comes from eox_nelp.learner_emails.tasks: full_name, course_name, certificate_url.
+{% endcomment %}
+{% load i18n %}
+
+{% block preview_text %}{% trans "Your certificate is ready to download." %}{% endblock %}
+
+{% block greeting %}{% if full_name %}{% blocktrans %}Congratulations {{ full_name }}!{% endblocktrans %}{% else %}{% trans "Congratulations!" %}{% endif %}{% endblock %}
+
+{% block title %}{% trans "You have successfully completed the program" %}{% endblock %}
+
+{% block program_box %}
+  {% include "ace_common/edx_ace/common/fx_program_box.html" with fx_program_name=course_name %}
+{% endblock %}
+
+{% block content %}
+  <p style="margin:0;">{% trans "Your certificate is ready to download." %}</p>
+{% endblock %}
+
+{% block cta %}
+  {% trans "Download your certificate" as button_cta_text %}
+  {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=button_cta_text fx_cta_url=certificate_url %}
+{% endblock %}
