@@ -395,6 +395,28 @@
     }
     .important-dates {
       padding: 0;
+      // Prerequisite list: logical properties only, so it mirrors itself in RTL.
+      .prerequisite-list {
+        clear: both;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        .prerequisite-list-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0 0 8px;
+          margin: 0;
+          overflow: visible;
+          font: 14px/24px $font-family-title;
+          .prerequisite-check {
+            position: static;
+            font-size: 16px;
+            line-height: 24px;
+            color: #16a34a;
+          }
+        }
+      }
       li {
         position: relative;
         padding: 0 0 20px 36px;

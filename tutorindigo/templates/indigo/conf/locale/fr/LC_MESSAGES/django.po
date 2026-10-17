@@ -148,7 +148,7 @@ msgstr ""
 
 #: lms/templates/courseware/course_about.html:242
 msgid "Prerequisites"
-msgstr ""
+msgstr "Prérequis"
 
 #: lms/templates/courseware/course_about.html:246
 #, python-brace-format
@@ -664,8 +664,9 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: lms/templates/learner_dashboard/program_card.underscore:18
+#: lms/templates/courseware/course_about.html
 msgid "Completed"
-msgstr ""
+msgstr "Terminé"
 
 #: lms/templates/learner_dashboard/program_card.underscore:26
 msgid "In Progress"
@@ -705,6 +706,10 @@ msgstr "Vous avez été invité(e) à"
 #, python-format
 msgid "All rights reserved to %(platform_name)s © %(year)s"
 msgstr "Tous droits réservés à %(platform_name)s © %(year)s"
+
+#: lms/templates/courseware/course_about.html
+msgid "You must complete the following courses first:"
+msgstr "Vous devez d’abord terminer les cours suivants :"
 
 #: lms/templates/ace_common/edx_ace/common/fx_base_body.html
 #: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
