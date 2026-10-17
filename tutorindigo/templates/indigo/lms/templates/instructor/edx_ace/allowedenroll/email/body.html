@@ -2,13 +2,18 @@
 {% comment %}
 Message 1, invitation (an email with no account yet). Registration is the call to action.
 The greeting has no name: the person has no account, so there is none to use.
-Start date and duration (the course Effort field) are shown only when set; the "accredited
-certificate" sentence is the tenant setting ACCREDITED_CERTIFICATE_TEXT and is hidden when unset.
+Start date and duration (the course Effort field, formatted as hours by the eox_nelp_tags
+effort_hours filter) are shown only when set. The "accredited certificate" sentence is the tenant
+setting ACCREDITED_CERTIFICATE_TEXT = {"ar": "...", "en": "...", "fr": "..."}: the value of the
+email's own language is shown, and the line is hidden when that language has none (no other
+language's sentence is borrowed). Dates are shown in Asia/Riyadh for every tenant (owner decision
+cr-email-timezone).
 Context keys are the stock ones (course_name, course, registration_url, is_shib_course, ...).
 {% endcomment %}
 {% load i18n %}
 {% load tz %}
 {% load ednx %}
+{% load eox_nelp_tags %}
 
 {% block preview_text %}{% blocktrans %}Invitation: {{ course_name }}{% endblocktrans %}{% endblock %}
 
@@ -21,12 +26,14 @@ Context keys are the stock ones (course_name, course, registration_url, is_shib_
 {% endblock %}
 
 {% block content %}
-  {% tenant_get_value "ACCREDITED_CERTIFICATE_TEXT" as fx_accredited %}
+  {% tenant_get_value "ACCREDITED_CERTIFICATE_TEXT" as fx_accredited_by_language %}
+    {% firstof course.effort|effort_hours as fx_effort %}
   {% comment %}Facts line: only the facts that exist, separated by a bullet (fx_sep is set once one is shown).{% endcomment %}
   <p style="margin:0;">
     {% if course.start %}{% timezone "Asia/Riyadh" %}{% blocktrans with date=course.start|date:"DATE_FORMAT" %}Starts: {{ date }}{% endblocktrans %}{% endtimezone %}{% firstof "1" as fx_sep %}{% endif %}
-    {% if course.effort %}{% if fx_sep %} &bull; {% endif %}{% blocktrans with effort=course.effort %}Duration: {{ effort }}{% endblocktrans %}{% firstof "1" as fx_sep %}{% endif %}
-    {% if fx_accredited %}{% if fx_sep %} &bull; {% endif %}{{ fx_accredited }}{% endif %}
+    {% if fx_effort %}{% if fx_sep %} &bull; {% endif %}{% blocktrans with effort=fx_effort %}Duration: {{ effort }}{% endblocktrans %}{% firstof "1" as fx_sep %}{% endif %}
+    {% comment %}A template cannot index a dict by a variable key, so loop and print the email's language (last item: a loop cannot set variables for later).{% endcomment %}
+    {% for fx_code, fx_text in fx_accredited_by_language.items %}{% if fx_code == LANGUAGE_CODE and fx_text %}{% if fx_sep %} &bull; {% endif %}{{ fx_text }}{% endif %}{% endfor %}
   </p>
 {% endblock %}
 
