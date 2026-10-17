@@ -20,6 +20,12 @@ emails use, falling back to the context's platform_name.
 Direction is written on the card table and on every cell, not only on the outer div: Outlook (Word
 rendering engine) honours dir/align on table elements far more reliably than on a div.
 {% endcomment %}
+{% comment %}
+fx_not_started is set only when the course start is in the future (no start date counts as open).
+Both sides are compared as epoch seconds: |add:"0" makes them integers, and an empty start gives 0.
+{% endcomment %}
+{% now "U" as fx_now %}
+{% if course.start|date:"U"|add:"0" > fx_now|add:"0" %}{% firstof "1" as fx_not_started %}{% endif %}
 {% if LANGUAGE_BIDI %}{% firstof "rtl" as fx_dir %}{% else %}{% firstof "ltr" as fx_dir %}{% endif %}
 
 {# Inbox preview text: visible in the message list of most clients, hidden in the body. #}

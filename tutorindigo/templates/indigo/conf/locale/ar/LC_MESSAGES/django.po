@@ -736,3 +736,70 @@ msgstr "حمّل شهادتك"
 #: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
 msgid "Congratulations!"
 msgstr "مبروك!"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Hello %(full_name)s,"
+msgstr "مرحبًا %(full_name)s،"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Invitation: %(course_name)s"
+msgstr "دعوة: %(course_name)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Invitation: %(course_name)s program"
+msgstr "دعوة: برنامج %(course_name)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You are invited to join a new program"
+msgstr "أنت مدعو للانضمام إلى برنامج جديد"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Starts: %(date)s"
+msgstr "يبدأ: %(date)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Duration: %(effort)s"
+msgstr "المدة: %(effort)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Register now"
+msgstr "سجّل الآن"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "You are registered in %(course_name)s"
+msgstr "تم تسجيلك في %(course_name)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You have been registered successfully"
+msgstr "تم تسجيلك بنجاح"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "You will find the program on your dashboard. You can start: %(date)s"
+msgstr "ستجد البرنامج في لوحة معلوماتك. يمكنك البدء: %(date)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Go to the program"
+msgstr "انتقل إلى البرنامج"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You are registered — start your learning journey now"
+msgstr "تم تسجيلك — ابدأ رحلتك التعليمية الآن"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You are registered, and the content is available now"
+msgstr "تم تسجيلك بنجاح، والمحتوى متاح لك الآن"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Your journey to a new skill starts now."
+msgstr "رحلتك نحو مهارة جديدة تبدأ الآن."
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Start learning"
+msgstr "ابدأ التعلم"

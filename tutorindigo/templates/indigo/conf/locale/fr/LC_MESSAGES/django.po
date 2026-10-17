@@ -736,3 +736,70 @@ msgstr "Télécharger votre certificat"
 #: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
 msgid "Congratulations!"
 msgstr "Félicitations !"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Hello %(full_name)s,"
+msgstr "Bonjour %(full_name)s,"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Invitation: %(course_name)s"
+msgstr "Invitation : %(course_name)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Invitation: %(course_name)s program"
+msgstr "Invitation : programme %(course_name)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You are invited to join a new program"
+msgstr "Vous êtes invité(e) à rejoindre un nouveau programme"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Starts: %(date)s"
+msgstr "Début : %(date)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "Duration: %(effort)s"
+msgstr "Durée : %(effort)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Register now"
+msgstr "S'inscrire maintenant"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "You are registered in %(course_name)s"
+msgstr "Vous êtes inscrit(e) à %(course_name)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You have been registered successfully"
+msgstr "Votre inscription a bien été enregistrée"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+#, python-format
+msgid "You will find the program on your dashboard. You can start: %(date)s"
+msgstr "Vous trouverez le programme dans votre tableau de bord. Vous pouvez commencer le : %(date)s"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Go to the program"
+msgstr "Accéder au programme"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You are registered — start your learning journey now"
+msgstr "Vous êtes inscrit(e) — commencez votre parcours d'apprentissage maintenant"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "You are registered, and the content is available now"
+msgstr "Vous êtes inscrit(e) et le contenu est disponible dès maintenant"
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Your journey to a new skill starts now."
+msgstr "Votre parcours vers une nouvelle compétence commence maintenant."
+
+#: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
+msgid "Start learning"
+msgstr "Commencer l'apprentissage"

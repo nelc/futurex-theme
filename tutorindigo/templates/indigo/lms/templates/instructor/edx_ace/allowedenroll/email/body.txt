@@ -1,0 +1,10 @@
+{% load i18n %}{% load tz %}{% load ednx %}{% autoescape off %}{% trans "Hello," %}
+
+{% trans "You are invited to join a new program" %}
+{{ course_name }}
+{% tenant_get_value "ACCREDITED_CERTIFICATE_TEXT" as fx_accredited %}{% if course.start %}{% timezone "Asia/Riyadh" %}{% blocktrans with date=course.start|date:"DATE_FORMAT" %}Starts: {{ date }}{% endblocktrans %}{% endtimezone %}
+{% endif %}{% if course.effort %}{% blocktrans with effort=course.effort %}Duration: {{ effort }}{% endblocktrans %}
+{% endif %}{% if fx_accredited %}{{ fx_accredited }}
+{% endif %}
+{% trans "Register now" %}: {% if is_shib_course and auto_enroll %}{{ course_url }}{% elif is_shib_course and course_about_url is not None %}{{ course_about_url }}{% else %}{{ registration_url }}{% endif %}
+{% endautoescape %}
