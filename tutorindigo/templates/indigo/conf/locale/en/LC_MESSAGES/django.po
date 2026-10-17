@@ -803,3 +803,29 @@ msgstr ""
 #: lms/templates/instructor/edx_ace (journey emails 1, 2, 4)
 msgid "Start learning"
 msgstr ""
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+msgid "The program content is now available to you"
+msgstr ""
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+msgid "Join the discussion space — your learning multiplies when ideas are exchanged."
+msgstr ""
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+msgid "Only a little left to complete your program"
+msgstr ""
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+#, python-format
+msgid "You have completed %(completed_percent)s%% — well done!"
+msgstr ""
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+#, python-format
+msgid "Remaining: %(remaining_percent)s%%"
+msgstr ""
+
+#: lms/templates/eox_nelp/edx_ace (journey emails 3, 5)
+msgid "Complete now"
+msgstr ""
