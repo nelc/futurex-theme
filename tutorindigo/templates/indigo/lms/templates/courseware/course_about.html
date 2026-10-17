@@ -1,6 +1,7 @@
 <%page expression_filter="h"/>
 <%namespace name='static' file='../static_content.html'/>
 <%!
+import logging
 from django.utils.translation import gettext as _
 from django.utils.translation import pgettext
 from django.urls import reverse
@@ -10,6 +11,13 @@ from common.djangoapps.edxmako.shortcuts import marketing_link
 from openedx.core.djangolib.js_utils import js_escaped_string
 from openedx.core.djangolib.markup import clean_dangerous_html, HTML, Text
 from openedx.core.lib.courses import course_image_url
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from lms.djangoapps.certificates.data import CertificateStatuses
+from lms.djangoapps.certificates.models import GeneratedCertificate
+# Hard dependency: shipped by eox-nelp (PR #338). No fallback on purpose - a missing module must fail loudly.
+from eox_nelp.effort import format_effort_hours
+
+log = logging.getLogger(__name__)
 %>
 
 <%inherit file="../main.html" />
@@ -219,8 +227,9 @@ from openedx.core.lib.courses import course_image_url
             </li>
             % endif
 
+          ## Effort is free text typed in Studio; shown as localized hours when it parses (eox-nelp), as typed otherwise.
           % if get_course_about_section(request, course, "effort"):
-            <li class="important-dates-item"><span class="icon fa fa-pencil" aria-hidden="true"></span><p class="important-dates-item-title">${_("Estimated Effort")}</p><span class="important-dates-item-text effort">${get_course_about_section(request, course, "effort")}</span></li>
+            <li class="important-dates-item"><span class="icon fa fa-pencil" aria-hidden="true"></span><p class="important-dates-item-title">${_("Estimated Effort")}</p><span class="important-dates-item-text effort">${format_effort_hours(get_course_about_section(request, course, "effort"))}</span></li>
           % endif
 
           ##<li class="important-dates-item"><span class="icon fa fa-clock-o" aria-hidden="true"></span><p class="important-dates-item-title">${_('Course Length')}</p><span class="important-dates-item-text course-length">${_('{number} weeks').format(number=15)}</span></li>
@@ -233,20 +242,41 @@ from openedx.core.lib.courses import course_image_url
             </li>
           %endif
 
-          % if pre_requisite_courses:
-          <% prc_target = reverse('about_course', args=[str(pre_requisite_courses[0]['key'])]) %>
+          <%
+            ## Every prerequisite, by display name. Two queries at most, regardless of how many prerequisites:
+            ## one for the names, one for the learner's certificates (authenticated learners only).
+            ## cache_if_anonymous caches this page for anonymous users alone, so the per-learner marks never reach the cache.
+            prereq_items = []
+            if pre_requisite_courses:
+                prereq_keys = [prc['key'] for prc in pre_requisite_courses]
+                prereq_names = {o.id: o.display_name for o in CourseOverview.objects.filter(id__in=prereq_keys)}
+                prereq_done = set()
+                if user.is_authenticated:
+                    prereq_done = set(GeneratedCertificate.objects.filter(
+                        user=user, course_id__in=prereq_keys, status=CertificateStatuses.downloadable,
+                    ).values_list('course_id', flat=True))
+                for prereq_key in prereq_keys:
+                    if prereq_key not in prereq_names:
+                        log.error("About page of %s: prerequisite course %s does not exist; skipped.", course.id, prereq_key)
+                        continue
+                    prereq_items.append((prereq_key, prereq_names[prereq_key], prereq_key in prereq_done))
+          %>
+          % if prereq_items:
           <li class="prerequisite-course important-dates-item">
             <span class="icon fa fa-list-ul" aria-hidden="true"></span>
             <p class="important-dates-item-title">${_("Prerequisites")}</p>
-            ## Multiple pre-requisite courses are not supported on frontend that's why we are pulling first element
-            <span class="important-dates-item-text pre-requisite"><a href="${prc_target}">${pre_requisite_courses[0]['display']}</a></span>
-            <p class="tip">
-            ${Text(_("You must successfully complete {link_start}{prc_display}{link_end} before you begin this course.")).format(
-              link_start=HTML('<a href="{}">').format(prc_target),
-              link_end=HTML('</a>'),
-              prc_display=pre_requisite_courses[0]['display'],
-            )}
-            </p>
+            <p class="tip">${_("You must complete the following courses first:")}</p>
+            <ul class="prerequisite-list">
+              % for prereq_key, prereq_name, prereq_is_done in prereq_items:
+              <li class="prerequisite-list-item${' is-completed' if prereq_is_done else ''}">
+                <a href="${reverse('about_course', args=[str(prereq_key)])}">${prereq_name}</a>
+                % if prereq_is_done:
+                <span class="prerequisite-check fa fa-check-circle" aria-hidden="true"></span>
+                <span class="sr">${_("Completed")}</span>
+                % endif
+              </li>
+              % endfor
+            </ul>
           </li>
           % endif
 
