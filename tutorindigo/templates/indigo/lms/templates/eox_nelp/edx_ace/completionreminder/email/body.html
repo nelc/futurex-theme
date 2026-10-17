@@ -1,0 +1,24 @@
+{% extends "ace_common/edx_ace/common/fx_base_body.html" %}
+{% comment %}
+Branded Message 5, completion reminder (progress or course-end trigger). Context: full_name, course_name, completed_percent, remaining_percent, course_url.
+{% endcomment %}
+{% load i18n %}
+
+{% block preview_text %}{% trans "Only a little left to complete your program" %}{% endblock %}
+
+{% block greeting %}{% if full_name %}{% blocktrans %}Hello {{ full_name }},{% endblocktrans %}{% else %}{% trans "Hello," %}{% endif %}{% endblock %}
+
+{% block title %}{% blocktrans %}You have completed {{ completed_percent }}% — well done!{% endblocktrans %}{% endblock %}
+
+{% block program_box %}
+  {% include "ace_common/edx_ace/common/fx_program_box.html" with fx_program_name=course_name %}
+{% endblock %}
+
+{% block content %}
+  <p style="margin:0;">{% blocktrans %}Remaining: {{ remaining_percent }}%{% endblocktrans %}</p>
+{% endblock %}
+
+{% block cta %}
+  {% trans "Complete now" as button_cta_text %}
+  {% include "ace_common/edx_ace/common/fx_cta.html" with fx_cta_text=button_cta_text fx_cta_url=course_url %}
+{% endblock %}
