@@ -732,3 +732,7 @@ msgstr "شهادتك جاهزة للتحميل."
 #: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
 msgid "Download your certificate"
 msgstr "حمّل شهادتك"
+
+#: lms/templates/eox_nelp/edx_ace/certificateready/email/body.html
+msgid "Congratulations!"
+msgstr "مبروك!"
