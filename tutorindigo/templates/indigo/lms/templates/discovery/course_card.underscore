@@ -24,6 +24,9 @@
                       { start_date: start }, true
                     ) %>
             </div>
+            <% if (typeof enrollment_end !== 'undefined' && enrollment_end && new Date(enrollment_end) < new Date()) { %>
+            <div class="course-enrollment-closed"><%- window.fxEnrollmentClosedLabel || gettext("Enrollment is Closed") %></div>
+            <% } %>
         </section>
         <div class="sr">
             <ul>
