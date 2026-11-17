@@ -1567,6 +1567,13 @@ body.indigo-dark-theme {
           color:  $dark !important;
         }
       }
+      .course-enrollment-closed {
+        padding: 6px 16px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #b42318;
+        background: #fef3f2;
+      }
     }
   }
 }
