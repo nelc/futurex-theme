@@ -18,7 +18,7 @@
   <script type="text/javascript">
     // The card template is raw underscore and the JS catalog has no closed-enrollment string,
     // so the server-side translation is handed to it here.
-    window.fxEnrollmentClosedLabel = "${_('Enrollment is Closed') | n, js_escaped_string}";
+    window.fxEnrollmentClosedLabel = "${_('Enrollment is closed') | n, js_escaped_string}";
   </script>
   % for template_name in ["course_card", "filter_bar", "filter", "facet", "facet_option"]:
   <script type="text/template" id="${template_name}-tpl">
