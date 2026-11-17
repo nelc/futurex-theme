@@ -2,6 +2,70 @@
 
 <%namespace name='fx_static' file='../fx_static_content.html'/>
 
+<%!
+import html
+import re
+
+from django.utils.translation import get_language
+
+FX_ENTITY_CONTACT_DIV_ID = 'entity_contact_details'
+FX_ENTITY_CONTACT_FIELD_RE = re.compile(
+    r'<p\b[^>]*\bdata-field="([a-z_]+)"[^>]*>(.*?)</p>', re.IGNORECASE | re.DOTALL,
+)
+FX_ENTITY_CONTACT_HREF_RE = re.compile(r'<a\b[^>]*\bhref="([^"]*)"', re.IGNORECASE)
+FX_ENTITY_CONTACT_FIELD_NAMES = {
+    'email': 'email',
+    'phone': 'phone',
+    'address': 'address',
+    'hours': 'working_hours',
+    'working_hours': 'working_hours',
+    'map': 'map_url',
+    'map_url': 'map_url',
+}
+
+
+def fx_entity_contact_contents(page_contents, language_code):
+    """
+    The entity platform-data form saves contact data as a paragraph whose HTML marks each value with
+    data-field. Return it as contact_info_v1 contents, or None when this paragraph is not one of those.
+    """
+    paragraph = page_contents.get('paragraph')
+    if page_contents.get('div_id') != FX_ENTITY_CONTACT_DIV_ID or not isinstance(paragraph, dict):
+        return None
+
+    contents = {'div_id': FX_ENTITY_CONTACT_DIV_ID, 'address': {}, 'working_hours': {}}
+    found = False
+    languages = [language_code] + [lang for lang in paragraph if lang != language_code]
+    for lang in languages:
+        lang_html = paragraph.get(lang)
+        if not isinstance(lang_html, str) or 'data-entity-contact' not in lang_html:
+            continue
+        found = True
+        for field_name, field_html in FX_ENTITY_CONTACT_FIELD_RE.findall(lang_html):
+            field = FX_ENTITY_CONTACT_FIELD_NAMES.get(field_name.lower())
+            if not field:
+                continue
+            value = html.unescape(re.sub(r'<[^>]*>', '', field_html)).strip()
+            if field == 'map_url':
+                href = FX_ENTITY_CONTACT_HREF_RE.search(field_html)
+                value = html.unescape(href.group(1)).strip() if href else value
+            if not value:
+                continue
+            if field in ('address', 'working_hours'):
+                contents[field][lang] = value
+            else:
+                contents.setdefault(field, value)
+
+    return contents if found else None
+%>
+
+<%
+fx_contact_contents = fx_entity_contact_contents(page_contents, get_language())
+%>
+
+% if fx_contact_contents:
+<%include file="_section_contact_info_v1.html" args="page_contents=fx_contact_contents"/>
+% else:
 <%
 id_tag = page_contents.get('div_id')
 if id_tag:
@@ -15,3 +79,4 @@ fx_html_content = fx_static.t(page_contents.get('paragraph'))
     ${fx_html_content | n}
 
 </div>
+% endif

@@ -1,4 +1,4 @@
-<%page args="page_name, allowed_sections, first_section_types=()"/>
+<%page args="page_name, allowed_sections, first_section_types=(), first_section_div_ids=()"/>
 
 <%namespace name='fx_static' file='../fx_static_content.html'/>
 
@@ -7,8 +7,13 @@
 <%
 the_page = fx_static.get_fx_config_value(page_name, default_value={})
 the_sections = the_page.get('sections') if the_page else None
-if the_sections and first_section_types:
-    the_sections = sorted(the_sections, key=lambda section: section.get('type') not in first_section_types)
+if the_sections and (first_section_types or first_section_div_ids):
+    the_sections = sorted(
+        the_sections,
+        key=lambda section: not (
+            section.get('type') in first_section_types or section.get('div_id') in first_section_div_ids
+        ),
+    )
 %>
 
 <div class="">
