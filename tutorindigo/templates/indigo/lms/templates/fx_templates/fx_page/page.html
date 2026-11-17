@@ -1,4 +1,4 @@
-<%page args="page_name, allowed_sections"/>
+<%page args="page_name, allowed_sections, first_section_types=()"/>
 
 <%namespace name='fx_static' file='../fx_static_content.html'/>
 
@@ -6,13 +6,16 @@
 
 <%
 the_page = fx_static.get_fx_config_value(page_name, default_value={})
+the_sections = the_page.get('sections') if the_page else None
+if the_sections and first_section_types:
+    the_sections = sorted(the_sections, key=lambda section: section.get('type') not in first_section_types)
 %>
 
 <div class="">
   <div class="container homeStaticPage">
 
-    % if the_page and the_page.get('sections'):
-        % for section in the_page.get('sections'):
+    % if the_sections:
+        % for section in the_sections:
             % if section.get('type') and section.get('visible') is True:
                 % if section.get('type') in allowed_sections:
                     <%include file="_section_${section.get('type')}.html" args="page_contents=section"/>
