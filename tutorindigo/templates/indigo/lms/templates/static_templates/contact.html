@@ -5,6 +5,7 @@
 <%
 allowed_sections = fx_static.get_all_fx_section_names()
 allowed_sections.remove('featured_courses_v1')
+allowed_sections.append('contact_info_v1')
 %>
 
 <%def name="pagetitle()">
@@ -15,4 +16,4 @@ allowed_sections.remove('featured_courses_v1')
     })}
 </%def>
 
-<%include file="../fx_templates/fx_page/page.html" args="page_name='pages_contact_us', allowed_sections=allowed_sections"/>
+<%include file="../fx_templates/fx_page/page.html" args="page_name='pages_contact_us', allowed_sections=allowed_sections, first_section_types=['contact_info_v1']"/>
