@@ -56,8 +56,8 @@
       background: transparent;
     }
 
-    &:hover { background: var(--sunk); color: var(--text); }
-    &[aria-selected="true"] { color: var(--brand); font-weight: 600; }
+    &:hover:not(:disabled) { background: var(--sunk); color: var(--text); }
+    &[aria-selected="true"], &[aria-selected="true"]:hover:not(:disabled) { color: var(--brand); font-weight: 600; }
     &[aria-selected="true"]::before { background: var(--brand); }
   }
 }
@@ -70,8 +70,18 @@
   margin-top: 16px;
 
   .fbar-l { color: var(--text-muted); font-size: 14px; font-weight: 500; margin-inline-end: 4px; }
+  [data-fxl-clear] { flex: 0 0 auto; white-space: nowrap; margin-inline-start: 4px; }
 
   @media (max-width: $fxl-bp-small) {
+    // one scrolling row on phones; the popovers are fixed bottom sheets there, so the scroller does not clip them
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
+    padding-bottom: 2px;
+
+    &::-webkit-scrollbar { display: none; }
     .fbar-l { display: none; }
   }
 }
@@ -95,11 +105,14 @@
   box-shadow: none;
   text-shadow: none;
 
-  &:hover, &:focus { background: var(--sunk); color: var(--text); }
+  &:hover:not(:disabled) { background: var(--sunk); color: var(--text); }
   .v { font-weight: 600; }
   svg { flex: 0 0 auto; color: var(--text-muted); }
-  &.on { border-color: var(--brand); background: var(--brand-soft); }
+  &.on, &.on:hover:not(:disabled) { border-color: var(--brand); background: var(--brand-soft); }
   &.on .v { color: var(--brand); }
+
+  // A filter none of the listed programs has a value for: shown, not usable.
+  &:disabled { opacity: .45; cursor: not-allowed; color: var(--text-faint); }
 
   .fc {
     font-style: normal;

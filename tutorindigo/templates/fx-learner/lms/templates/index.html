@@ -1,5 +1,7 @@
-## fx-learner home (brief 4.1): hero carousel from every visible hero_section_v1 of pages_home, then
-## up to 3 featured programs from the first featured_courses_v1. No tabs here: they live on /courses.
+## fx-learner home (brief 4.1): the hero band (one slide per visible hero_section_v1 of pages_home, rotating
+## inside the band), then up to 3 featured programs from the first featured_courses_v1. No tabs here: they live
+## on /courses. A slide is text only (optional tag pill, title, paragraph, meta line, buttons) unless the tenant
+## gave it an image; there is no placeholder artwork.
 <%page expression_filter="h"/>
 <%inherit file="main.html" />
 <%namespace name='static' file='static_content.html'/>
@@ -25,12 +27,13 @@ if featured_sections:
 
 <main id="main" class="fxl-main" aria-label="${L('المحتوى', 'Content')}" tabindex="-1">
   % if slides:
-  <section class="fxl-hero" aria-roledescription="carousel" aria-label="${L('إعلانات الجهة', 'Announcements')}" data-fxl-hero>
+  <section class="fxl-hero${' is-single' if len(slides) == 1 else ''}" aria-roledescription="carousel" aria-label="${L('إعلانات الجهة', 'Announcements')}" data-fxl-hero>
     <div class="fxl-hero-track">
       % for index, slide in enumerate(slides):
       <%
         slide_title = tr(slide.get('title'))
         slide_text = tr(slide.get('description'))
+        slide_tag = tr(slide.get('tag')).strip()
         slide_image = slide.get('hero_image') if isinstance(slide.get('hero_image'), str) else ''
         slide_view = fxl.attr.hero_slide(request, slide, fx_static.get_fx_link_sections)
         slide_label = L('%d من %d' % (index + 1, len(slides)), '%d of %d' % (index + 1, len(slides)))
@@ -42,8 +45,11 @@ if featured_sections:
            id="${slide['div_id']}"
            % endif
       >
-        <div class="fxl-wrap fxl-slide-in">
+        <div class="fxl-wrap fxl-slide-in${' has-art' if slide_image else ''}">
           <div class="txt">
+            % if slide_tag:
+            <span class="tag">${slide_tag}</span>
+            % endif
             % if index == 0:
             <h1 class="h1">${slide_title}</h1>
             % else:
@@ -55,16 +61,17 @@ if featured_sections:
             % if slide_view['meta']:
             <p class="meta">${slide_view['meta']}</p>
             % endif
+            % if slide_view['buttons']:
             <div class="acts">
               % for button in slide_view['buttons']:
               <a class="${'fxl-cta' if button['kind'] == 'primary' else 'fxl-cta fxl-cta-line'}" href="${button['href']}" ${button['new_tab'] | n}>${button['label']}</a>
               % endfor
             </div>
+            % endif
           </div>
           % if slide_image:
-          <div class="art art-img" aria-hidden="true"><img src="${slide_image}" alt="" loading="${'eager' if index == 0 else 'lazy'}" onerror="this.parentNode.className='art art-pattern';this.remove();"/></div>
-          % else:
-          <div class="art art-pattern${' alt' if index % 2 else ''}" aria-hidden="true"></div>
+          ## An image that fails to load leaves a text-only band: no broken image, no placeholder.
+          <div class="art" aria-hidden="true"><img src="${slide_image}" alt="" loading="${'eager' if index == 0 else 'lazy'}" onerror="var a=this.parentNode;a.parentNode.classList.remove('has-art');a.remove();"/></div>
           % endif
         </div>
       </div>

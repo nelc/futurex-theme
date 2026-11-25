@@ -30,13 +30,33 @@ body {
   padding-bottom: 8px;
 
   h1, h2, h3 { text-wrap: balance; color: var(--text); letter-spacing: normal; text-transform: none; text-align: start; }
+}
+
+.fxl-main, .fxl-header, .fxl-footer {
   :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: var(--r-sm); }
 }
 
 [hidden] { display: none !important; }
 
-// Indigo/bootstrap give buttons letter-spacing and uppercase; the fx-learner controls use plain text.
-.fxl-main button, .fxl-header button, .fxl-main .fxl-btn-primary, .fxl-main .fxl-btn-ghost, .fxl-header .fxl-btn-primary {
+// The platform styles every bare <button> as a "shiny" blue button (lms/static/sass/shared/_forms.scss):
+// gradient, inset shadow and text shadow at rest, a second gradient with its own background-color on
+// button:hover:not(:disabled), an inset glow on :focus and :active. Those selectors weigh (0,2,1), so this
+// reset is written with the same :not(:disabled) pseudo-classes to out-rank them in every state.
+// It cannot give the hover background-color back: each fx-learner button states its own hover colour with
+// &:hover:not(:disabled), which out-ranks the platform rule too.
+.fxl-main button, .fxl-header button, .fxl-footer button {
+  font-family: var(--font) !important; // indigo sets a button font with !important
+
+  &, &:hover:not(:disabled), &:focus:not(:disabled), &:active:not(:disabled) {
+    background-image: none;
+    box-shadow: none;
+    text-shadow: none;
+    letter-spacing: normal;
+    text-transform: none;
+  }
+}
+
+.fxl-main .fxl-btn-primary, .fxl-main .fxl-btn-ghost, .fxl-header .fxl-btn-primary {
   letter-spacing: normal;
   text-transform: none;
 }
@@ -91,7 +111,7 @@ body {
   background: var(--brand);
   color: var(--on-brand) !important;
 
-  &:hover, &:focus { background: var(--brand-hover); border-color: var(--brand-hover); color: var(--on-brand) !important; }
+  &:hover:not(:disabled):not(.is-disabled) { background: var(--brand-hover); border-color: var(--brand-hover); color: var(--on-brand) !important; }
 
   &.is-disabled {
     cursor: not-allowed;
@@ -108,7 +128,7 @@ body {
   background: var(--surface);
   color: var(--text) !important;
 
-  &:hover, &:focus { background: var(--sunk); color: var(--text) !important; }
+  &:hover:not(:disabled) { background: var(--sunk); color: var(--text) !important; }
   svg { color: var(--brand); }
 }
 
@@ -123,6 +143,8 @@ body {
   font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 4px;
+
+  &:hover:not(:disabled) { background: transparent; color: var(--brand) !important; }
 }
 
 // Title band + breadcrumb (every inner page)
@@ -222,6 +244,8 @@ body {
   color: var(--text-muted);
   font-size: 15px;
   background: var(--muted-surface);
+
+  > div { margin-top: 14px; }
 }
 
 .fxl-searchbox {

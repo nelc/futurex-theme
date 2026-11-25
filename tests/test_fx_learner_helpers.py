@@ -256,5 +256,91 @@ class SafeUrlTest(HelpersTestCase):
         self.assertEqual(helpers.safe_links(bare), [{"link": "https://www.example.sa/x", "new_tab": ""}])
 
 
+
+class CatalogFacetsTest(HelpersTestCase):
+    """The catalogue filter bar always lists the five filters; cards and options match on codes, not labels."""
+
+    def test_duration_code_boundaries(self):
+        helpers = self.load()
+        cases = [(None, ""), ("", ""), ("abc", ""), (0, ""), (-2, ""), (float("nan"), ""),
+                 (0.5, "le3"), (3, "le3"), (3.5, "4to5"), (5, "4to5"), (5.1, "ge6"), ("12", "ge6")]
+        for hours, expected in cases:
+            with self.subTest(hours=hours):
+                self.assertEqual(helpers.duration_code(hours), expected)
+        self.assertEqual(helpers.duration_bucket(2), "3 hours or less")
+        self.assertEqual(helpers.duration_bucket(None), "")
+
+    def test_facet_codes_are_language_neutral_and_drop_unknown_values(self):
+        item = program(COURSE_A, learning_mode="self_paced", level="basic", effort_hours=4, has_certificate=True,
+                       status="upcoming", start_date="2030-01-05T00:00:00Z")
+        expected = {"mode": "self_paced", "level": "basic", "dur": "4to5", "cert": "yes", "status": "upcoming"}
+        for lang in ("en", "ar"):
+            with self.subTest(lang=lang):
+                self.assertEqual(self.load(lang=lang).facet_codes(item), expected)
+        unknown = program(COURSE_B, learning_mode="hybrid", level=None, has_certificate=None, status="paused")
+        self.assertEqual(self.load().facet_codes(unknown),
+                         {"mode": "", "level": "", "dur": "", "cert": "", "status": ""})
+
+    def test_five_filters_are_always_listed_even_with_no_values(self):
+        helpers = self.load()
+        for programs in ([], None, [program(COURSE_A, status=None)]):
+            with self.subTest(programs=programs):
+                facets = helpers.catalog_facets(programs)
+                self.assertEqual([f["id"] for f in facets], ["mode", "level", "dur", "cert", "status"])
+                self.assertTrue(all(f["name"] for f in facets))
+                self.assertEqual([f["options"] for f in facets], [[], [], [], [], []])
+
+    def test_a_filter_with_a_single_value_keeps_it_and_options_follow_the_fixed_order(self):
+        helpers = self.load()
+        programs = [
+            program(COURSE_A, level="advanced", effort_hours=8, has_certificate=False, status="closed"),
+            program(COURSE_B, level="basic", effort_hours=2, has_certificate=False, status="open"),
+        ]
+        facets = {f["id"]: f["options"] for f in helpers.catalog_facets(programs)}
+        self.assertEqual(facets["mode"], [])
+        self.assertEqual(facets["level"], [{"value": "basic", "label": "Basic"},
+                                           {"value": "advanced", "label": "Advanced"}])
+        self.assertEqual([o["value"] for o in facets["dur"]], ["le3", "ge6"])
+        self.assertEqual(facets["cert"], [{"value": "no", "label": "No certificate"}])
+        self.assertEqual([o["value"] for o in facets["status"]], ["open", "closed"])
+
+    def test_upcoming_programs_share_one_status_option_whatever_their_start_date(self):
+        helpers = self.load(lang="ar")
+        programs = [program(COURSE_A, status="upcoming", start_date="2030-01-05T00:00:00Z"),
+                    program(COURSE_B, status="upcoming", start_date="2030-02-09T00:00:00Z")]
+        status = [f for f in helpers.catalog_facets(programs) if f["id"] == "status"][0]
+        self.assertEqual(status["options"], [{"value": "upcoming", "label": "يبدأ قريبًا"}])
+
+
+class LearnerHomeRedirectTest(HelpersTestCase):
+    """The legacy /dashboard under fx-learner goes to the tenant's learner home, and never to itself."""
+
+    def redirect(self, home, path="/dashboard"):
+        helpers = self.load()
+        if home is not None:
+            helpers.settings.LEARNER_HOME_MICROFRONTEND_URL = home
+        return helpers.learner_home_redirect(path)
+
+    def test_learner_home_setting_is_the_target(self):
+        self.assertEqual(self.redirect("/learner/my"), "/learner/my")
+        self.assertEqual(self.redirect(" /learner/my "), "/learner/my")
+        self.assertEqual(self.redirect("https://apps.example.sa/learner-dashboard/"),
+                         "https://apps.example.sa/learner-dashboard/")
+
+    def test_missing_setting_goes_to_the_catalogue(self):
+        for home in (None, "", "   ", 5):
+            with self.subTest(home=home):
+                self.assertEqual(self.redirect(home), "/courses")
+
+    def test_a_target_that_is_the_dashboard_itself_goes_to_the_catalogue(self):
+        # the test stub's reverse('dashboard') is "/dashboard/"
+        for home in ("/dashboard", "/dashboard/", "/dashboard?x=1", "/legacy/"):
+            with self.subTest(home=home):
+                self.assertEqual(self.redirect(home, path="/legacy"), "/courses")
+
+    def test_protocol_relative_target_is_refused(self):
+        self.assertEqual(self.redirect("//evil.example/x"), "/courses")
+
+
 if __name__ == "__main__":
     unittest.main()
