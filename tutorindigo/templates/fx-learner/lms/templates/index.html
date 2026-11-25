@@ -17,9 +17,8 @@ featured_title = ''
 categories = {}
 if featured_sections:
     featured_title = tr(featured_sections[0].get('title')).strip() or L('أبرز البرامج', 'Featured programs')
-    tabs = fxl.attr.home_tabs()
+    programs, tabs = fxl.attr.catalog_view(request, courses)
     categories = {tab['id']: tab['name'] for tab in tabs}
-    programs = fxl.attr.catalog(request, courses, tabs)
     featured = [p for p in programs if p.get('status') == 'open'] + [p for p in programs if p.get('status') == 'upcoming']
     featured = featured[:3]
 %>

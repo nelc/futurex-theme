@@ -14,9 +14,9 @@
 fx_footer = fx_static.get_fx_config_value('footer', default_value={})
 if not isinstance(fx_footer, dict):
     fx_footer = {}
-footer_links = fx_static.get_fx_link_sections(fx_footer.get('sections', []))
+footer_links = fxl.attr.safe_links(fx_static.get_fx_link_sections(fx_footer.get('sections', [])))
 social_links = [
-    link for link in fx_static.get_fx_social_media_links(fx_footer.get('social_media_links', []))
+    link for link in fxl.attr.safe_links(fx_static.get_fx_social_media_links(fx_footer.get('social_media_links', [])), 'value')
     if ui.has_social_icon(link.get('provider'))
 ]
 copyright_text = fx_static.t(fx_footer.get('copyrights_text', '')) or ''

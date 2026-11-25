@@ -20,7 +20,7 @@ ent = fxl.attr.entity(static.get_platform_name())
 home_url = branding_api.get_base_url(request.is_secure())
 
 header_cfg = fx_static.get_fx_config_value('header', default_value={})
-nav_links = fx_static.get_fx_link_sections(header_cfg.get('sections', []) if isinstance(header_cfg, dict) else [])
+nav_links = fxl.attr.safe_links(fx_static.get_fx_link_sections(header_cfg.get('sections', []) if isinstance(header_cfg, dict) else []))
 path = request.path
 def nav_active(link):
     if link == path:
@@ -41,7 +41,7 @@ if user.is_authenticated:
     urls = fxl.attr.learner_urls()
     help_cfg = ent['help_link'] or {'page': 'faq'}
     help_links = fx_static.get_fx_link_sections([dict(help_cfg)])
-    help_url = help_links[0]['link'] if help_links else '/faq'
+    help_url = (fxl.attr.safe_url(help_links[0].get('link')) if help_links else '') or '/faq'
 %>
 
 % if request.user.is_authenticated and request.COOKIES.get('theme-preview') == 'yes':
