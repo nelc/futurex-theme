@@ -3,7 +3,7 @@
 <%page args="page_contents" expression_filter="h"/>
 <%namespace name='fxl' file='/fx_learner/helpers.html'/>
 <%
-title = fxl.attr.tr(page_contents.get('title'))
+title = fxl.attr.tr_real(page_contents.get('title'))
 items = page_contents.get('items') if isinstance(page_contents.get('items'), list) else []
 items = [text for text in (fxl.attr.tr(item) for item in items) if text]
 div_id = page_contents.get('div_id') if isinstance(page_contents.get('div_id'), str) else ''

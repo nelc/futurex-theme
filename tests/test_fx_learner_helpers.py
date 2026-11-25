@@ -5,6 +5,7 @@ template module. Mako plus minimal stubs for the platform imports; no Open edX n
 Run:  python -m unittest discover -s tests -v      (needs `pip install mako`)
 """
 
+import re
 import sys
 import types
 import unittest
@@ -428,6 +429,280 @@ class CoverTest(HelpersTestCase):
         self.assertNotIn('onload="x', html)
         self.assertNotIn("<script>", html)
         self.assertIn('data-fallback="/b.png&#34;&gt;&lt;script&gt;', html)
+
+
+class TenantTitlesTest(HelpersTestCase):
+    """A designer default is not the tenant's title: the theme's own heading (or nothing) is shown instead."""
+
+    FEATURED = ("أبرز البرامج", "Featured programs")
+
+    def heading(self, title, lang):
+        return self.load(lang=lang).tr_own(title, *self.FEATURED)
+
+    def test_english_default_in_the_arabic_field_gives_the_theme_heading(self):
+        title = {"ar": "Our Courses", "en": ""}
+        self.assertEqual(self.heading(title, "ar"), "أبرز البرامج")
+        self.assertEqual(self.heading(title, "en"), "Featured programs")
+
+    def test_a_real_title_is_kept_for_its_own_language_only(self):
+        self.assertEqual(self.heading({"ar": " برامجنا ", "en": ""}, "ar"), "برامجنا")
+        self.assertEqual(self.heading({"ar": "برامجنا", "en": ""}, "en"), "Featured programs")
+        self.assertEqual(self.heading({"ar": "برامجنا", "en": "Our programmes"}, "en"), "Our programmes")
+        self.assertEqual(self.heading({"ar": "", "en": "Our programmes"}, "ar"), "أبرز البرامج")
+
+    def test_an_english_title_in_the_english_field_is_the_tenants_own(self):
+        self.assertEqual(self.heading({"ar": "دوراتنا", "en": "Our Courses"}, "en"), "Our Courses")
+
+    def test_designer_instructions_are_defaults_in_every_field(self):
+        title = {"ar": "أدخل العنوان هنا", "en": "Enter the title here"}
+        self.assertEqual(self.heading(title, "ar"), "أبرز البرامج")
+        self.assertEqual(self.heading(title, "en"), "Featured programs")
+
+    def test_defaults_match_whatever_the_case_and_spacing(self):
+        for text in ("our courses", "  OUR   COURSES ", "Our\nCourses"):
+            with self.subTest(text=text):
+                self.assertEqual(self.heading({"ar": text}, "ar"), "أبرز البرامج")
+
+    def test_other_latin_text_in_the_arabic_field_is_kept(self):
+        self.assertEqual(self.heading({"ar": "SDAIA Academy"}, "ar"), "SDAIA Academy")
+
+    def test_malformed_titles_give_the_theme_heading(self):
+        for title in (None, 5, [], {}, {"ar": 5}, {"ar": None}, ""):
+            with self.subTest(title=title):
+                self.assertEqual(self.heading(title, "ar"), "أبرز البرامج")
+
+    def test_tr_real_skips_defaults_and_falls_back_across_languages(self):
+        helpers = self.load(lang="ar")
+        self.assertEqual(helpers.tr_real({"ar": "أدخل العنوان هنا", "en": "Enter the title here"}), "")
+        self.assertEqual(helpers.tr_real({"ar": "Our Courses", "en": ""}), "")
+        self.assertEqual(helpers.tr_real({"ar": "أدخل الوصف هنا", "en": "About us"}), "About us")
+        self.assertEqual(helpers.tr_real({"ar": "عنوان", "en": "Title"}), "عنوان")
+        self.assertEqual(helpers.tr_real("Enter the description here"), "")
+        self.assertEqual(helpers.tr_real("Plain"), "Plain")
+        self.assertEqual(helpers.tr_real(None), "")
+        helpers = self.load(lang="en")
+        self.assertEqual(helpers.tr_real({"ar": "Our Courses", "en": ""}), "")
+        self.assertEqual(helpers.tr_real({"ar": "عنوان", "en": ""}), "عنوان")
+
+    def test_tr_itself_is_unchanged(self):
+        self.assertEqual(self.load(lang="ar").tr({"ar": "Our Courses", "en": ""}), "Our Courses")
+
+    def test_a_hero_slide_nobody_filled_is_not_shown(self):
+        helpers = self.load(lang="ar")
+        stock = {"title": {"ar": "أدخل العنوان هنا", "en": "Enter the title here"},
+                 "description": {"ar": "أدخل الوصف هنا", "en": "Enter the description here"}}
+        self.assertFalse(helpers.hero_has_content(stock))
+        self.assertFalse(helpers.hero_has_content({}))
+        self.assertFalse(helpers.hero_has_content(dict(stock, hero_image="  ", course_id=None)))
+        self.assertTrue(helpers.hero_has_content(dict(stock, hero_image="/a.png")))
+        self.assertTrue(helpers.hero_has_content(dict(stock, course_id=COURSE_A)))
+        self.assertTrue(helpers.hero_has_content(dict(stock, title={"ar": "مرحبًا"})))
+        self.assertTrue(helpers.hero_has_content({"description": {"en": "Welcome"}}))
+
+
+def identity(**colors):
+    return {"colors": [{"color_type": kind, "hex": value} for kind, value in colors.items()]}
+
+
+class BrandColorsTest(HelpersTestCase):
+    """--brand: the tenant's own primary colour, else the design green; designer defaults are not a choice."""
+
+    def test_no_colour_gives_the_design_green(self):
+        for value in (None, {}, {"colors": None}, {"colors": ["junk", {"color_type": "primary_color"}]}, "x"):
+            with self.subTest(value=value):
+                self.assertEqual(self.load().brand_colors(value), {"brand": "#1B8354", "heading": "", "button": ""})
+
+    def test_the_tenants_own_colours_win(self):
+        colors = self.load().brand_colors(identity(primary_color="#AA0011", heading_color="#123", button_color="#00aa11"))
+        self.assertEqual(colors, {"brand": "#AA0011", "heading": "#123", "button": "#00aa11"})
+
+    def test_designer_defaults_are_not_a_tenant_choice(self):
+        colors = self.load().brand_colors(identity(primary_color="#4600C7", heading_color="#6A32D1", button_color="#3b85ff"))
+        self.assertEqual(colors, {"brand": "#1B8354", "heading": "", "button": ""})
+
+    def test_a_value_that_is_not_a_hex_colour_is_ignored(self):
+        for value in ("red", "#12345", "#1B8354;} body{display:none", 5, None, "url(x)"):
+            with self.subTest(value=value):
+                self.assertEqual(self.load().brand_colors(identity(primary_color=value))["brand"], "#1B8354")
+
+    def test_the_plugins_effective_colour_is_used_when_it_has_one(self):
+        plugin = types.SimpleNamespace(get_effective_brand_color=lambda visual_identity: "#0055aa")
+        self.assertEqual(self.load(plugin).brand_colors(identity(primary_color="#AA0011"))["brand"], "#0055aa")
+
+    def test_a_failing_or_odd_plugin_answer_falls_back_to_the_theme_reading(self):
+        def boom(visual_identity):
+            raise RuntimeError("boom")
+
+        plugin = types.SimpleNamespace(get_effective_brand_color=boom)
+        with self.assertLogs(level="ERROR"):
+            colors = self.load(plugin).brand_colors(identity(primary_color="#AA0011"))
+        self.assertEqual(colors["brand"], "#AA0011")
+        for answer in (None, "green;}", 5):
+            with self.subTest(answer=answer):
+                plugin = types.SimpleNamespace(get_effective_brand_color=lambda visual_identity, answer=answer: answer)
+                self.assertEqual(self.load(plugin).brand_colors(identity(primary_color="#AA0011"))["brand"], "#AA0011")
+
+
+class BrandLinkWeightTest(unittest.TestCase):
+    """The run-time link colour must out-rank the platform's compiled green in every link state.
+
+    The platform (lms/static/sass/base/_base.scss) colours links with four selectors, each again under
+    :hover/:focus. fx-learner's rule comes later in the same stylesheet, so it wins a state only when it carries
+    a selector of at least that state's weight.
+    """
+
+    PLATFORM = ("a:not(.btn)", "a:visited:not(.btn)", "p a:not(.btn)", "p a:visited:not(.btn)")
+    SASS = HERE.parent / "tutorindigo" / "templates" / "fx-learner" / "lms" / "static" / "sass" / "fxl" / "_base.scss"
+
+    @staticmethod
+    def weight(selector):
+        """(classes, types) of a simple selector list; :where() counts for nothing, :not() for its argument."""
+        selector = re.sub(r":where\([^)]*\)", "", selector)
+        selector = re.sub(r":not\(([^)]*)\)", r"\1", selector)
+        classes = len(re.findall(r"\.[\w-]+|\[[^\]]*\]|:[\w-]+", selector))
+        types = len(re.findall(r"(?:^|\s)[a-z]+", selector))
+        return classes, types
+
+    def link_selectors(self):
+        rule = re.search(r"((?:^:where\(\.fxl-main\)[^{]*)+)\{\s*color: var\(--brand\);", self.SASS.read_text(), re.M)
+        self.assertIsNotNone(rule, "the fx-learner link colour rule is gone")
+        return [selector.strip() for selector in rule.group(1).split(",")]
+
+    def test_weight_reading(self):
+        self.assertEqual(self.weight("p a:visited:not(.btn):hover"), (3, 2))
+        self.assertEqual(self.weight(":where(.fxl-main) a:not([class])"), (1, 1))
+
+    def test_every_platform_link_state_is_matched_weight_for_weight(self):
+        ours = self.link_selectors()
+        for state in ("", ":hover"):
+            for selector in self.PLATFORM:
+                with self.subTest(selector=selector + state):
+                    self.assertIn(self.weight(selector + state), [self.weight(ours_ + state) for ours_ in ours])
+
+    def test_the_rule_stays_at_the_platforms_weight(self):
+        # Never heavier than the platform's own selectors: a more specific fx-learner rule must still win.
+        heaviest = max(self.weight(selector) for selector in self.PLATFORM)
+        for selector in self.link_selectors():
+            self.assertLessEqual(self.weight(selector), heaviest)
+            self.assertTrue(selector.startswith(":where(.fxl-main) "))
+
+
+class CourseHomeTest(HelpersTestCase):
+    """"Continue learning" on the details page opens the course home in the tenant's learning MFE."""
+
+    MFE = "https://tenant.example/learning/course/%s/home" % COURSE_A
+
+    def home(self, course_target, learning_url=""):
+        return self.load().course_home(COURSE_A, course_target, learning_url)
+
+    def test_the_plugins_learning_url_wins(self):
+        self.assertEqual(self.home("/courses/%s/courseware" % COURSE_A, self.MFE), self.MFE)
+        self.assertEqual(self.home("None/course/%s/home" % COURSE_A, "/learning/course/x/home"), "/learning/course/x/home")
+
+    def test_the_platform_target_is_used_without_a_plugin_value(self):
+        for learning_url in ("", None, 5, "javascript:alert(1)", "//evil.example/x", "mailto:a@b.c"):
+            with self.subTest(learning_url=learning_url):
+                self.assertEqual(self.home(self.MFE, learning_url), self.MFE)
+        self.assertEqual(self.home("/learning/course/x/home"), "/learning/course/x/home")
+
+    def test_a_target_built_from_an_unset_setting_becomes_the_legacy_courseware_url(self):
+        for target in ("None/course/%s/home" % COURSE_A, "", None, "https:///x"):
+            with self.subTest(target=target):
+                self.assertEqual(self.home(target), "/courseware/%s" % COURSE_A)
+
+    def test_the_about_page_target_is_kept_for_a_user_who_cannot_open_the_course(self):
+        about = "/about_course/%s" % COURSE_A
+        self.assertEqual(self.home(about, self.MFE), about)
+
+
+PAGE_STUBS = {
+    "fx_templates/fx_static_content.html": (
+        "<%! CONFIG = {} %>"
+        """<%def name="get_fx_config_value(key, default_value='')" buffered="True"><% return CONFIG.get(key, default_value) %></%def>"""
+        """<%def name="get_fx_link_sections(links)" buffered="True"><% return links %></%def>"""
+    ),
+    "fx_templates/fx_head_extra.html": "<style>:root { --fx-2025-indigo-purple-color: #4600c7; }</style>",
+    "fx_templates/fx_css_override.html": "",
+}
+
+
+class PageRenderTest(HelpersTestCase):
+    """head-extra.html and index.html rendered through Mako, with stubs for the platform and indigo includes."""
+
+    def lookup(self, config, lang="ar"):
+        import tempfile
+
+        self.load(types.SimpleNamespace(get_learner_theme_catalog=lambda request: []), config, lang)
+        markup = types.ModuleType("openedx.core.djangolib.markup")
+        markup.HTML = str
+        modules = {name: sys.modules.get(name) or types.ModuleType(name)
+                   for name in ("openedx", "openedx.core", "openedx.core.djangolib")}
+        modules["openedx.core.djangolib.markup"] = markup
+        patcher = mock.patch.dict(sys.modules, modules)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        stub_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(stub_dir.cleanup)
+        for name, text in PAGE_STUBS.items():
+            path = Path(stub_dir.name) / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+        lookup = TemplateLookup(directories=[stub_dir.name, str(HERE / "stubs"), str(HELPERS.parent.parent)],
+                                input_encoding="utf-8")
+        lookup.get_template("/fx_templates/fx_static_content.html").module.CONFIG.update(config)
+        return lookup
+
+    def head(self, visual_identity):
+        return self.lookup({"visual_identity": visual_identity}).get_template("/head-extra.html").render()
+
+    def home(self, sections, lang="ar"):
+        config = {"pages_home": {"sections": sections}}
+        return self.lookup(config, lang).get_template("/index.html").render(
+            request=object(), courses=[], show_homepage_promo_video=False)
+
+    def test_head_extra_always_prints_the_brand_and_remaps_indigos_colours(self):
+        html = self.head({})
+        self.assertIn("--brand: #1B8354;", html)
+        self.assertIn("--fx-2025-indigo-purple-color: var(--brand);", html)
+        self.assertIn("--fx-2025-indigo-purple-heart: var(--brand-hover);", html)
+        self.assertIn("--fx-2025-indigo-btn-primary: var(--brand);", html)
+        # after indigo's block, on a selector that out-ranks its :root
+        self.assertLess(html.index("#4600c7"), html.index("html:root {"))
+
+    def test_head_extra_keeps_the_tenants_own_colours(self):
+        html = self.head(identity(primary_color="#AA0011", heading_color="#221133", button_color="#3b85ff"))
+        self.assertIn("--brand: #AA0011;", html)
+        self.assertIn("--fx-2025-indigo-purple-heart: #221133;", html)
+        self.assertIn("--fx-2025-indigo-btn-primary: var(--brand);", html)
+
+    def test_head_extra_ignores_the_designers_stock_primary(self):
+        self.assertIn("--brand: #1B8354;", self.head(identity(primary_color="#4600C7")))
+
+    def test_home_heading_is_the_theme_wording_for_a_stock_title(self):
+        featured = {"type": "featured_courses_v1", "visible": True, "title": {"ar": "Our Courses", "en": ""}}
+        self.assertIn("<h2>أبرز البرامج</h2>", self.home([featured], "ar"))
+        self.assertNotIn("Our Courses", self.home([featured], "ar"))
+        self.assertIn("<h2>Featured programs</h2>", self.home([featured], "en"))
+
+    def test_home_heading_keeps_a_real_title(self):
+        featured = {"type": "featured_courses_v1", "visible": True, "title": {"ar": "برامجنا", "en": ""}}
+        self.assertIn("<h2>برامجنا</h2>", self.home([featured], "ar"))
+
+    def test_home_hero_drops_stock_text_and_unfilled_slides(self):
+        stock_title = {"ar": "أدخل العنوان هنا", "en": "Enter the title here"}
+        stock_text = {"ar": "أدخل الوصف هنا", "en": "Enter the description here"}
+        slides = [
+            {"type": "hero_section_v1", "visible": True, "title": stock_title, "description": stock_text},
+            {"type": "hero_section_v1", "visible": True, "title": stock_title, "description": {"ar": "نص حقيقي"}},
+            {"type": "hero_section_v1", "visible": True, "title": {"ar": "عنوان حقيقي"}, "description": stock_text},
+        ]
+        html = self.home(slides, "ar")
+        for text in ("أدخل العنوان هنا", "أدخل الوصف هنا", "Enter the"):
+            self.assertNotIn(text, html)
+        self.assertEqual(html.count('class="fxl-slide'), 2)
+        self.assertIn("<p>نص حقيقي</p>", html)
+        self.assertNotIn("<h1", html)  # the first shown slide has no title of its own
+        self.assertIn('<h2 class="h1">عنوان حقيقي</h2>', html)
 
 
 if __name__ == "__main__":

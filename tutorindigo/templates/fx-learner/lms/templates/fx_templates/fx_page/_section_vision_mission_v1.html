@@ -4,9 +4,9 @@
 <%page args="page_contents" expression_filter="h"/>
 <%namespace name='fxl' file='/fx_learner/helpers.html'/>
 <%
-vision = fxl.attr.tr(page_contents.get('vision'))
-mission = fxl.attr.tr(page_contents.get('mission'))
-title = fxl.attr.tr(page_contents.get('title')) or fxl.attr.L('الرؤية والرسالة', 'Vision and mission')
+vision = fxl.attr.tr_real(page_contents.get('vision'))
+mission = fxl.attr.tr_real(page_contents.get('mission'))
+title = fxl.attr.tr_own(page_contents.get('title'), 'الرؤية والرسالة', 'Vision and mission')
 div_id = page_contents.get('div_id') if isinstance(page_contents.get('div_id'), str) else ''
 %>
 % if vision or mission:

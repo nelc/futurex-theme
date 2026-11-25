@@ -69,11 +69,14 @@ log = logging.getLogger(__name__)
 <%block name="pagetitle">${course.display_name_with_default}</%block>
 
 ## The enrolment call to action, in the platform's states (same order as indigo's template).
-<%def name="cta(side=False)">
-<% side_class = ' side-cta' if side else '' %>
+<%def name="cta(side=False, learning_url='')">
+<%
+side_class = ' side-cta' if side else ''
+course_home = fxl.attr.course_home(course.id, course_target, learning_url)
+%>
 % if user.is_authenticated and registered:
   % if show_courseware_link:
-  <a href="${course_target}" class="fxl-btn-primary${side_class}">${fxl.attr.L('أكمل التعلّم', 'Continue learning')}</a>
+  <a href="${course_home}" class="fxl-btn-primary${side_class}">${fxl.attr.L('أكمل التعلّم', 'Continue learning')}</a>
   % else:
   <a href="${fxl.attr.learner_urls()['my']}" class="fxl-btn-ghost${side_class}">${_("Already Enrolled")}<span aria-hidden="true">·</span>${fxl.attr.L('برامجي', 'My programs')}${ui.arrow(16)}</a>
   % endif
@@ -85,7 +88,7 @@ log = logging.getLogger(__name__)
   <span class="fxl-btn-primary is-disabled${side_class}" aria-disabled="true">${ui.icon('lock', 16)}${fxl.attr.L('التسجيل مغلق', 'Registration closed')}</span>
 % elif allow_anonymous:
   % if show_courseware_link:
-  <a href="${course_target}" class="fxl-btn-primary${side_class}">${_("View Course")}</a>
+  <a href="${course_home}" class="fxl-btn-primary${side_class}">${_("View Course")}</a>
   % endif
 % else:
   <%
@@ -174,7 +177,7 @@ cover_program = dict(
           % if status_text and program.get('status') != 'open':
           <div class="fxl-badges"><span class="fxl-state ${status_class}">${status_text}</span></div>
           % endif
-          ${cta()}
+          ${cta(learning_url=program.get('learning_url'))}
         </div>
         <div class="art">
           % if has_video:
@@ -241,7 +244,7 @@ cover_program = dict(
           </div>
           % endif
 
-          ${cta(side=True)}
+          ${cta(side=True, learning_url=program.get('learning_url'))}
         </div>
 
         % if sidebar_html_enabled and get_course_about_section(request, course, "about_sidebar_html"):

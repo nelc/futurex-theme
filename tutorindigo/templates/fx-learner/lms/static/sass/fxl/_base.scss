@@ -61,6 +61,28 @@ body {
   text-transform: none;
 }
 
+// Brand colour at run time on what fx-learner does not redesign. The compiled default for these is already the
+// design green (partials/lms/theme/_variables.scss); a tenant's own colour only exists as --brand, so the
+// platform's stock primary buttons, and plain links in authored content, read it here. Specificity is kept at
+// the platform's own level (:where adds none), so any more specific indigo or fx-learner rule still wins.
+.btn-primary, .btn-brand {
+  background-color: var(--brand);
+  border-color: var(--brand);
+
+  &:hover, &:focus { background-color: var(--brand-hover); border-color: var(--brand-hover); }
+}
+
+// The link selectors mirror the platform's own four (base/_base.scss: `a:not(.btn)`, its :visited form, and both
+// again under `p`), weight for weight, so a later rule of equal weight replaces the compiled green in every state.
+:where(.fxl-main) a:not([class]),
+:where(.fxl-main) a:not([class]):visited,
+:where(.fxl-main) p a:not([class]),
+:where(.fxl-main) p a:not([class]):visited {
+  color: var(--brand);
+
+  &:hover, &:focus { color: var(--brand-hover); }
+}
+
 .fxl-wrap {
   max-width: var(--wrap);
   margin: 0 auto;

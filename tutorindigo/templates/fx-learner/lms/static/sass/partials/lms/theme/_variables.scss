@@ -3,4 +3,21 @@
 // parent's are NOT seen automatically. Each one therefore re-imports indigo's file by a path relative to this
 // file: themes are siblings both locally (/openedx/themes/{indigo,fx-learner}) and in production
 // (<repo>/tutorindigo/templates/{indigo,fx-learner}).
+//
+// The compile-time colours are the design green instead of indigo's blue/purple, so every platform or indigo
+// rule built from them (bootstrap buttons and links, legacy pages, the XBlock iframe in courseware) is green
+// by default. $primary and $primary-hover must be set BEFORE the import (indigo declares them !default and
+// initialises the bootstrap theme from $primary); $link-color is a plain assignment in indigo's file, so it
+// is set after it. A tenant's own colour cannot reach Sass: the runtime layer is --brand (fxl/_base.scss).
+$primary: #1b8354;
+$primary-hover: #166a45;
+$link-hover: #166a45;
+$uxpl-blue-hover-active: #166a45;
+// The platform's own blues (all !default there): $blue and the "primary action" shades behind legacy buttons
+// such as a problem's Submit.
+$blue: #1b8354;
+$m-blue-d1: #1b8354;
+$m-blue-d3: #1b8354;
+$m-blue-d4: #166a45;
 @import "../../../../../../../indigo/lms/static/sass/partials/lms/theme/variables";
+$link-color: #1b8354;
