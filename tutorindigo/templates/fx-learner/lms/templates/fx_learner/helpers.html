@@ -491,16 +491,25 @@ def has_helpers():
 
 # ---------------------------------------------------------------- home hero slides
 
+# A link saved without a scheme that is plainly a host: dotted name, optional port, optional path/query/fragment.
+_SCHEMELESS_HOST = re.compile(
+    r'^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+(?::\d{1,5})?(?:[/?#].*)?$'
+)
+
+
 def safe_url(url):
-    """A link target the theme may print in an href: site-relative, #anchor, http(s), mailto or tel. Anything else
-    (javascript:, data:, protocol-relative, control characters) becomes ''."""
+    """A link target the theme may print in an href: site-relative, #anchor, http(s), mailto or tel. A host saved
+    without a scheme (www.example.sa, example.com/path) gets https://. Anything else (javascript:, data:,
+    protocol-relative, control characters) becomes ''."""
     if not isinstance(url, str):
         return ''
     url = url.strip()
-    if not url or any(ord(char) < 32 or ord(char) == 127 for char in url) or url.startswith('//'):
+    if not url or any(ord(char) < 32 or ord(char) == 127 for char in url) or url.startswith(('//', '/\\')):
         return ''
     if url.startswith(('/', '#')):
         return url
+    if _SCHEMELESS_HOST.match(url) and not any(char.isspace() for char in url):
+        return 'https://' + url
     return url if urlparse(url).scheme.lower() in ('http', 'https', 'mailto', 'tel') else ''
 
 

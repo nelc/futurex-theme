@@ -189,6 +189,51 @@ class SafeUrlTest(HelpersTestCase):
                 helpers = self.load(config={"entity_identity": {"site_url": raw}})
                 self.assertEqual(helpers.entity()["site_url"], expected)
 
+    def test_safe_url_adds_https_to_a_link_saved_without_a_scheme(self):
+        helpers = self.load()
+        for raw, expected in [
+            ("www.example.sa", "https://www.example.sa"),
+            ("example.com/path?a=1", "https://example.com/path?a=1"),
+            ("x.com/name", "https://x.com/name"),
+            ("sub.domain.org:8443/x", "https://sub.domain.org:8443/x"),
+            ("  www.example.sa  ", "https://www.example.sa"),
+            ("/about", "/about"),
+            ("#faq", "#faq"),
+            ("http://example.sa/x", "http://example.sa/x"),
+            ("HTTPS://example.sa", "HTTPS://example.sa"),
+            ("mailto:user@example.com", "mailto:user@example.com"),
+            ("tel:+966110000000", "tel:+966110000000"),
+        ]:
+            with self.subTest(raw=raw):
+                self.assertEqual(helpers.safe_url(raw), expected)
+
+    def test_safe_url_still_rejects_everything_that_is_not_a_plain_host(self):
+        helpers = self.load()
+        for raw in [
+            "javascript:alert(1)",
+            "JaVaScRiPt:x",
+            "data:text/html,x",
+            "//evil.com",
+            "/\\evil.com",
+            "vbscript:x",
+            "www.exa mple.sa",
+            "example.com/a b",
+            "example.com\tx",
+            "www.example.sa\njavascript:alert(1)",
+            "java\nscript:alert(1)",
+            "javascript:alert(1).com",
+            "user@example.com",
+            "faq",
+            "example.com:abc",
+            "evil:example.com",
+            "example.com:123456",
+            "",
+            "   ",
+            None,
+        ]:
+            with self.subTest(raw=raw):
+                self.assertEqual(helpers.safe_url(raw), "")
+
     def test_safe_links_drops_unsafe_targets_and_keeps_the_rest_untouched(self):
         helpers = self.load()
         links = [
@@ -202,6 +247,8 @@ class SafeUrlTest(HelpersTestCase):
         social = [{"provider": "x", "value": "https://x.com/a"}, {"provider": "x", "value": "vbscript:x"}]
         self.assertEqual(helpers.safe_links(social, "value"), [social[0]])
         self.assertEqual(helpers.safe_links(None), [])
+        bare = [{"link": "www.example.sa/x", "new_tab": ""}]
+        self.assertEqual(helpers.safe_links(bare), [{"link": "https://www.example.sa/x", "new_tab": ""}])
 
 
 if __name__ == "__main__":
