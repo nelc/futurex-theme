@@ -1,4 +1,6 @@
-$primary: #3b85ff;
+// !default so a child theme (fx-learner) can set its own before importing this file; indigo itself sets
+// neither earlier, so its compiled CSS is unchanged.
+$primary: #3b85ff !default;
 $primary-light: #F2F7F8;
 
 // Theme fonts
@@ -16,7 +18,7 @@ $dark: #111827;
 $light-dark: #374151;
 $big-screen: 1200px;
 $border-color: #e5e7eb;
-$primary-hover: #6a32d1;
+$primary-hover: #6a32d1 !default;
 $bg-color: #f3f3f3;
 $link-color:#006daa;
 $new-border-color: #d1d5db;

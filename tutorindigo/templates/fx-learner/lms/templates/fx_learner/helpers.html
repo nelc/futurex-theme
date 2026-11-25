@@ -57,6 +57,54 @@ def tr(value):
     return ''
 
 
+# Text the theme designer saves by itself, which no tenant wrote: its "enter the ... here" instructions (any
+# language field), and English section names found in the Arabic field (the designer edits the Arabic field
+# first, so an English default typed or seeded there is not an Arabic title). Compared case-insensitively
+# with whitespace collapsed.
+_STOCK_TEXTS = frozenset(text.casefold() for text in (
+    'أدخل العنوان هنا', 'Enter the title here', 'Entrez le titre ici', 'Masukkan judul di sini',
+    'أدخل الوصف هنا', 'Enter the description here', 'Entrez la description ici', 'Masukkan deskripsi di sini',
+    'أدخل الرؤية هنا', 'Enter the vision here', 'أدخل الرسالة هنا', 'Enter the mission here',
+))
+_STOCK_ENGLISH_IN_AR = frozenset(text.casefold() for text in (
+    'Our Courses', 'Courses', 'Featured courses', 'Our Programs', 'Programs', 'Featured programs',
+))
+
+
+def is_stock(text, code=''):
+    """True when text is blank or a designer default rather than the tenant's own words. code is the language
+    field the text was saved in: the English section names count as defaults only in the 'ar' field."""
+    if not isinstance(text, str) or not text.strip():
+        return True
+    folded = ' '.join(text.split()).casefold()
+    return folded in _STOCK_TEXTS or (code == 'ar' and folded in _STOCK_ENGLISH_IN_AR)
+
+
+def tr_real(value):
+    """tr() for a heading or paragraph that is simply left out when the tenant wrote none: designer defaults
+    are skipped in every language field, so the result is the tenant's own text or ''."""
+    if isinstance(value, str):
+        return '' if is_stock(value) else value
+    if not isinstance(value, dict):
+        return ''
+    for code in (lang(), 'en', 'ar'):
+        text = value.get(code)
+        if not is_stock(text, code):
+            return text
+    return ''
+
+
+def tr_own(value, ar_default, en_default):
+    """A section heading the theme has its own wording for: the tenant's text saved for the CURRENT language
+    when it is really theirs, else the theme's heading in that language (never the other language's text,
+    never a designer default)."""
+    code = 'ar' if is_ar() else 'en'
+    text = value if isinstance(value, str) else (value.get(code) if isinstance(value, dict) else None)
+    if not is_stock(text, code):
+        return text.strip()
+    return L(ar_default, en_default)
+
+
 # ---------------------------------------------------------------- config
 
 def cfg(key, default=None):
@@ -71,6 +119,50 @@ def cfg(key, default=None):
         return default
     value = (found.get('values') or {}).get(key)
     return default if value is None else value
+
+
+# The design's brand colour, used when the tenant saved no primary colour of its own.
+DEFAULT_BRAND_COLOR = '#1B8354'
+# What the theme designer saves by itself the first time its Visual identity panel is opened (indigo's own
+# fallbacks): not a tenant choice, so the design colour applies.
+_STOCK_COLORS = {'primary_color': '#4600c7', 'heading_color': '#6a32d1', 'button_color': '#3b85ff'}
+_HEX_COLOR = re.compile(r'^#(?:[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$')
+
+
+def _own_color(visual_identity, color_type):
+    """The tenant's own hex for one visual_identity colour type, or '' (missing, not a hex, designer default)."""
+    colors = visual_identity.get('colors') if isinstance(visual_identity, dict) else None
+    found = ''
+    for color in colors if isinstance(colors, list) else []:
+        if not isinstance(color, dict) or color.get('color_type') != color_type:
+            continue
+        value = color.get('hex')
+        if isinstance(value, str) and _HEX_COLOR.match(value):
+            found = value
+    return '' if found.lower() == _STOCK_COLORS.get(color_type) else found
+
+
+def brand_colors(visual_identity):
+    """The colours head-extra prints: {'brand', 'heading', 'button'}.
+
+    brand is never empty: the plugin's effective brand colour when it has one (the same value the MFE shell
+    and the learning MFE get), else the tenant's own primary colour, else the design green. heading and button
+    are the tenant's own heading/button colours, or '' when it saved none: those then follow the brand.
+    """
+    brand = ''
+    getter = getattr(_learner_theme, 'get_effective_brand_color', None) if _learner_theme is not None else None
+    if getter is not None:
+        try:
+            brand = getter(visual_identity)
+        except Exception:
+            log.exception('fx-learner: get_effective_brand_color failed; reading the colour in the theme')
+        if not isinstance(brand, str) or not _HEX_COLOR.match(brand):
+            brand = ''
+    return {
+        'brand': brand or _own_color(visual_identity, 'primary_color') or DEFAULT_BRAND_COLOR,
+        'heading': _own_color(visual_identity, 'heading_color'),
+        'button': _own_color(visual_identity, 'button_color'),
+    }
 
 
 def page_sections(page_key, section_type=None):
@@ -629,6 +721,16 @@ def _hero_program(request, course_id):
         return None
 
 
+def hero_has_content(slide):
+    """False for a slide the tenant never filled: no title, text or tag of its own (the designer's "enter
+    the title here" defaults do not count), no image and no program. Such a slide is not shown."""
+    if any(tr_real(slide.get(key)).strip() for key in ('title', 'description', 'tag', 'meta')):
+        return True
+    image = slide.get('hero_image')
+    course_id = slide.get('course_id')
+    return bool((isinstance(image, str) and image.strip()) or (isinstance(course_id, str) and course_id.strip()))
+
+
 def program_meta(program):
     """The one-line summary under a program slide's title: mode, duration, certificate, start date when upcoming."""
     parts = [
@@ -761,6 +863,36 @@ def learner_urls():
     except Exception:
         logout_url = '/logout'
     return {'my': my_url, 'certificates': certificates_url, 'profile': profile_url, 'logout': logout_url}
+
+
+def course_home(course_id, course_target, learning_url=''):
+    """Where "Continue learning" / "View Course" on the details page goes: the course home in the tenant's
+    learning MFE.
+
+    course_target is the platform view's value: the learning MFE course home when the user may open it, else
+    the About page itself, which is kept. learning_url is the plugin's program `learning_url` (the same MFE
+    home, with a fallback when LEARNING_MICROFRONTEND_URL is not set) and wins when it is a site path or an
+    http(s) URL. Without it course_target is used, unless the platform built it from an unset setting
+    ("None/course/..."): then the legacy courseware URL, which the platform redirects into the MFE.
+    """
+    course_id = str(course_id)
+    target = course_target if isinstance(course_target, str) else ''
+    try:
+        about_url = reverse('about_course', args=[course_id])
+    except Exception:
+        about_url = ''
+    if about_url and target == about_url:
+        return target
+    url = safe_url(learning_url)
+    if url.startswith(('/', 'http://', 'https://')):
+        return url
+    url = safe_url(target)
+    if url.startswith('/') or (url.startswith(('http://', 'https://')) and urlparse(url).netloc):
+        return url
+    try:
+        return reverse('courseware', args=[course_id])
+    except Exception:
+        return f'/courses/{course_id}/courseware'
 
 
 def _site_host(netloc):

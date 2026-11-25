@@ -12,13 +12,16 @@
 <%
 L = fxl.attr.L
 tr = fxl.attr.tr
-slides = fxl.attr.page_sections('pages_home', 'hero_section_v1')
+slides = [
+    slide for slide in fxl.attr.page_sections('pages_home', 'hero_section_v1')
+    if fxl.attr.hero_has_content(slide)
+]
 featured_sections = fxl.attr.page_sections('pages_home', 'featured_courses_v1')
 featured = []
 featured_title = ''
 categories = {}
 if featured_sections:
-    featured_title = tr(featured_sections[0].get('title')).strip() or L('أبرز البرامج', 'Featured programs')
+    featured_title = fxl.attr.tr_own(featured_sections[0].get('title'), 'أبرز البرامج', 'Featured programs')
     programs, tabs = fxl.attr.catalog_view(request, courses)
     categories = {tab['id']: tab['name'] for tab in tabs}
     featured = [p for p in programs if p.get('status') == 'open'] + [p for p in programs if p.get('status') == 'upcoming']
@@ -31,9 +34,10 @@ if featured_sections:
     <div class="fxl-hero-track">
       % for index, slide in enumerate(slides):
       <%
-        slide_title = tr(slide.get('title'))
-        slide_text = tr(slide.get('description'))
-        slide_tag = tr(slide.get('tag')).strip()
+        ## The designer's "enter the title here" defaults are not the tenant's words: such a title or paragraph is left out.
+        slide_title = fxl.attr.tr_real(slide.get('title')).strip()
+        slide_text = fxl.attr.tr_real(slide.get('description'))
+        slide_tag = fxl.attr.tr_real(slide.get('tag')).strip()
         slide_image = slide.get('hero_image') if isinstance(slide.get('hero_image'), str) else ''
         slide_view = fxl.attr.hero_slide(request, slide, fx_static.get_fx_link_sections)
         slide_label = L('%d من %d' % (index + 1, len(slides)), '%d of %d' % (index + 1, len(slides)))
@@ -50,9 +54,9 @@ if featured_sections:
             % if slide_tag:
             <span class="tag">${slide_tag}</span>
             % endif
-            % if index == 0:
+            % if slide_title and index == 0:
             <h1 class="h1">${slide_title}</h1>
-            % else:
+            % elif slide_title:
             <h2 class="h1">${slide_title}</h2>
             % endif
             % if slide_text.strip():

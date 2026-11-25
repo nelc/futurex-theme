@@ -41,8 +41,8 @@ if metrics:
     except Exception:
         log.exception('fx-learner: live statistics unavailable')
 
-title = fx_static.t(page_contents.get('title'))
-description = fx_static.t(page_contents.get('description'))
+title = fxl.attr.tr_real(page_contents.get('title'))
+description = fxl.attr.tr_real(page_contents.get('description'))
 div_id = page_contents.get('div_id') if isinstance(page_contents.get('div_id'), str) else ''
 %>
 % if metrics:
