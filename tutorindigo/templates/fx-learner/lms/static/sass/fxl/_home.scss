@@ -46,8 +46,9 @@
     padding: 0 8px;
     border-radius: var(--r-sm);
     margin-bottom: 16px;
-    background: var(--brand-soft);
-    color: var(--brand);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--n800);
   }
 
   .h1 { margin: 0; max-width: 760px; font-size: clamp(30px, 4.6vw, 52px); font-weight: 600; line-height: 1.25; letter-spacing: -.01em; color: var(--text); }

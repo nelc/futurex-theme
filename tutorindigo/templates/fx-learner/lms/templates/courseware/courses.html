@@ -161,6 +161,24 @@ count_words = {
       facet.querySelector('.fxl-fbtn').setAttribute('aria-expanded', 'false');
     });
   }
+  function place(pop) {
+    // keep an open popover inside the viewport: flip it to the button's inline-end edge when it would overflow
+    var edge = 8;
+    function fits() {
+      var rect = pop.getBoundingClientRect();
+      return rect.left >= edge && rect.right <= document.documentElement.clientWidth - edge;
+    }
+    pop.classList.remove('is-end');
+    if (fits()) { return; }
+    pop.classList.add('is-end');
+    if (!fits()) { pop.classList.remove('is-end'); }
+  }
+  window.addEventListener('resize', function () {
+    facets.forEach(function (facet) {
+      var pop = facet.querySelector('.fxl-fpop');
+      if (!pop.hidden) { place(pop); }
+    });
+  });
   tabs.forEach(function (tab) {
     tab.addEventListener('click', function () {
       state.tab = tab.getAttribute('data-fxl-tab');
@@ -185,7 +203,7 @@ count_words = {
       closeAll(facet);
       pop.hidden = !open;
       button.setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) { var first = pop.querySelector('input'); if (first) { first.focus(); } }
+      if (open) { place(pop); var first = pop.querySelector('input'); if (first) { first.focus(); } }
     });
     pop.addEventListener('change', function (event) {
       var input = event.target;

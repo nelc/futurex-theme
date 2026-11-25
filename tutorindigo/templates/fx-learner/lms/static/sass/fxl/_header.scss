@@ -11,7 +11,9 @@
   color: var(--text);
 
   *, *::before, *::after { box-sizing: border-box; }
-  a { text-decoration: none; }
+  // The platform underlines every a:not(.btn) on hover/focus (and :visited:hover) with more specificity than a
+  // plain descendant rule; the header's links (logo, nav, account menu) never underline, in any state.
+  a, a:hover, a:focus, a:active, a:visited { text-decoration: none !important; }
 }
 
 .fxl-headrow {

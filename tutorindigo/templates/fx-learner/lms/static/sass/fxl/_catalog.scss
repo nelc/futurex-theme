@@ -136,6 +136,7 @@
   inset-inline-start: 0;
   z-index: 35;
   width: 280px;
+  max-width: calc(100vw - 32px);
   max-height: 420px;
   overflow-y: auto;
   display: flex;
@@ -178,6 +179,12 @@
 
     &.zero { color: var(--text-faint); }
     &:has(input:checked) { color: var(--brand); font-weight: 600; }
+  }
+
+  // Set by the page script when the popover would run past the viewport edge (the last filters at tablet
+  // width): anchor it to the button's inline-end edge instead. Not on phones, where it is a bottom sheet.
+  @media (min-width: $fxl-bp-small + 1) {
+    &.is-end { inset-inline-start: auto; inset-inline-end: 0; }
   }
 
   @media (max-width: $fxl-bp-small) {
