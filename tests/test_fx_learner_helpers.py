@@ -12,6 +12,7 @@ from decimal import Decimal
 from pathlib import Path
 from unittest import mock
 
+from mako.lookup import TemplateLookup
 from mako.template import Template
 
 HERE = Path(__file__).parent
@@ -315,11 +316,11 @@ class CatalogFacetsTest(HelpersTestCase):
 class LearnerHomeRedirectTest(HelpersTestCase):
     """The legacy /dashboard under fx-learner goes to the tenant's learner home, and never to itself."""
 
-    def redirect(self, home, path="/dashboard"):
+    def redirect(self, home, path="/dashboard", host="lms.example.sa"):
         helpers = self.load()
         if home is not None:
             helpers.settings.LEARNER_HOME_MICROFRONTEND_URL = home
-        return helpers.learner_home_redirect(path)
+        return helpers.learner_home_redirect(path, host)
 
     def test_learner_home_setting_is_the_target(self):
         self.assertEqual(self.redirect("/learner/my"), "/learner/my")
@@ -340,6 +341,93 @@ class LearnerHomeRedirectTest(HelpersTestCase):
 
     def test_protocol_relative_target_is_refused(self):
         self.assertEqual(self.redirect("//evil.example/x"), "/courses")
+
+    def test_an_absolute_url_of_this_sites_own_dashboard_goes_to_the_catalogue(self):
+        # the review's loop: the setting is this site's /dashboard written as a full URL
+        for home in ("https://lms.example.sa/dashboard", "https://LMS.example.sa/dashboard/",
+                     "http://lms.example.sa/dashboard?next=1", "https://lms.example.sa:443/dashboard#top",
+                     "https://user@lms.example.sa/dashboard", "lms.example.sa/dashboard",
+                     "https://lms.example.sa/legacy/"):
+            with self.subTest(home=home):
+                self.assertEqual(self.redirect(home, path="/legacy"), "/courses")
+        self.assertEqual(self.redirect("https://lms.example.sa:8000/dashboard", host="lms.example.sa:8000"),
+                         "/courses")
+
+    def test_an_absolute_url_elsewhere_or_of_another_page_is_kept(self):
+        for home in ("https://apps.example.sa/dashboard", "https://lms.example.sa/learner/my",
+                     "https://lms.example.sa:8443/dashboard", "https://lms.example.sa.evil.example/dashboard"):
+            with self.subTest(home=home):
+                self.assertEqual(self.redirect(home), home)
+        # host unknown: an absolute URL cannot be told apart from another site's, so it is kept
+        self.assertEqual(self.redirect("https://lms.example.sa/dashboard", host=""),
+                         "https://lms.example.sa/dashboard")
+
+    def test_a_target_safe_url_rejects_goes_to_the_catalogue(self):
+        for home in ("javascript:alert(1)", " JavaScript:alert(1)", "data:text/html,<script>alert(1)</script>",
+                     "vbscript:x", "/\\evil.example", "https://ok.example/\n0;url=//evil.example", "/learner\tmy",
+                     "ftp://files.example/x", "learner/my", "0;url=https://evil.example"):
+            with self.subTest(home=home):
+                self.assertEqual(self.redirect(home), "/courses")
+
+    def test_a_target_that_is_not_a_page_goes_to_the_catalogue(self):
+        # safe_url allows these in an href, but a refresh to them would stay on (or never leave) /dashboard
+        for home in ("#my", "mailto:help@example.sa", "tel:+966110000000", "https:/dashboard", "https:dashboard",
+                     "http://"):
+            with self.subTest(home=home):
+                self.assertEqual(self.redirect(home), "/courses")
+
+    def test_a_host_saved_without_a_scheme_gets_https(self):
+        self.assertEqual(self.redirect("apps.example.sa/learner-dashboard/"),
+                         "https://apps.example.sa/learner-dashboard/")
+
+
+class CoverTest(HelpersTestCase):
+    """ui.cover: a second, distinct image candidate is tried once before the default cover shows."""
+
+    def cover(self, **program_fields):
+        self.load()  # platform stubs for helpers.html, which ui.html imports as a namespace
+        markup = types.ModuleType("openedx.core.djangolib.markup")
+        markup.HTML = str
+        patcher = mock.patch.dict(sys.modules, {
+            name: sys.modules.get(name) or types.ModuleType(name)
+            for name in ("openedx", "openedx.core", "openedx.core.djangolib")
+        })
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch.dict(sys.modules, {"openedx.core.djangolib.markup": markup})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        lookup = TemplateLookup(directories=[str(HELPERS.parent.parent)], input_encoding="utf-8",
+                                default_filters=["h"])
+        return lookup.get_template("/fx_learner/ui.html").get_def("cover").render(dict({"title": "T"}, **program_fields))
+
+    def test_a_second_distinct_candidate_is_offered_once(self):
+        html = self.cover(image_url="/asset-v1:a+b+c+type@asset+block@x.png", image_fallback_url="//cdn.example/x.png")
+        self.assertIn('src="/asset-v1:a+b+c+type@asset+block@x.png"', html)
+        self.assertIn('data-fallback="//cdn.example/x.png"', html)
+        # the handler reads the candidate from the attribute and removes it before the swap: one retry, no loop
+        self.assertIn("removeAttribute('data-fallback')", html)
+        self.assertNotIn("cdn.example", html.split("onerror=")[1])
+        self.assertIn('<span class="fxl-cv-def" hidden>', html)
+
+    def test_no_fallback_attribute_without_a_second_distinct_candidate(self):
+        for extra in ({}, {"image_fallback_url": None}, {"image_fallback_url": ""}, {"image_fallback_url": "/a.png"},
+                      {"image_fallback_url": 5}):
+            with self.subTest(extra=extra):
+                html = self.cover(image_url="/a.png", **extra)
+                self.assertIn('src="/a.png"', html)
+                self.assertNotIn("data-fallback=", html)
+
+    def test_no_image_shows_the_default_cover_even_with_a_fallback_only(self):
+        html = self.cover(image_url=None, image_fallback_url="/b.png")
+        self.assertNotIn("<img", html)
+        self.assertIn('<span class="fxl-cv-def"><i>T</i></span>', html)
+
+    def test_candidate_urls_are_escaped_as_attributes(self):
+        html = self.cover(image_url='/a.png" onload="x', image_fallback_url='/b.png"><script>alert(1)</script>')
+        self.assertNotIn('onload="x', html)
+        self.assertNotIn("<script>", html)
+        self.assertIn('data-fallback="/b.png&#34;&gt;&lt;script&gt;', html)
 
 
 if __name__ == "__main__":

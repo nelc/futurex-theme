@@ -9,7 +9,7 @@
 from openedx.core.djangolib.js_utils import js_escaped_string
 %>
 <%
-target = fxl.attr.learner_home_redirect(request.path)
+target = fxl.attr.learner_home_redirect(request.path, request.get_host())
 is_ar = fxl.attr.is_ar()
 %>
 <!DOCTYPE html>

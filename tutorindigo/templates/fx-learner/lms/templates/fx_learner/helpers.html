@@ -763,24 +763,32 @@ def learner_urls():
     return {'my': my_url, 'certificates': certificates_url, 'profile': profile_url, 'logout': logout_url}
 
 
-def learner_home_redirect(current_path=''):
+def _site_host(netloc):
+    host = (netloc or '').rsplit('@', 1)[-1].strip().lower()
+    for port in (':80', ':443'):
+        if host.endswith(port):
+            host = host[:-len(port)]
+    return host
+
+
+def learner_home_redirect(current_path='', current_host=''):
     """Where the legacy /dashboard sends a learner under fx-learner: the tenant's learner home. When that is
-    not set, or is the page being rendered (it would loop), the catalogue."""
-    home = getattr(settings, 'LEARNER_HOME_MICROFRONTEND_URL', None)
-    home = home.strip() if isinstance(home, str) else ''
+    not set, is not a link safe_url allows as a page (site path or http(s) URL), or is the page being rendered
+    (a site path, or a URL on current_host, that is this /dashboard: it would loop), the catalogue."""
+    home = safe_url(getattr(settings, 'LEARNER_HOME_MICROFRONTEND_URL', None))
+    try:
+        parsed = urlparse(home)
+    except ValueError:
+        return '/courses'
+    if not home.startswith('/') and not (parsed.scheme.lower() in ('http', 'https') and parsed.netloc):
+        return '/courses'
     try:
         dashboard = reverse('dashboard')
     except Exception:
         dashboard = '/dashboard'
-    try:
-        home_path = urlparse(home).path if home.startswith('/') else None
-    except ValueError:
-        home_path = home
-    if not home or home.startswith('//'):
-        return '/courses'
-    if home_path is not None:
+    if not parsed.netloc or (current_host and _site_host(parsed.netloc) == _site_host(current_host)):
         for own in (dashboard, current_path or ''):
-            if own and home_path.rstrip('/') == own.rstrip('/'):
+            if own and parsed.path.rstrip('/') == own.rstrip('/'):
                 return '/courses'
     return home
 %>

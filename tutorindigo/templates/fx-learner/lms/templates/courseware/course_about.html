@@ -45,7 +45,7 @@ log = logging.getLogger(__name__)
     $('#class_enroll_form').on('ajax:complete', function(event, xhr) {
       if (xhr.status == 200) {
         if (xhr.responseText == "") {
-          location.href = "${fxl.attr.learner_urls()['my'] | n, js_escaped_string}";
+          location.href = "${fxl.attr.learner_home_redirect() | n, js_escaped_string}";
         }
         else {
           location.href = xhr.responseText;
@@ -151,8 +151,13 @@ if pre_requisite_courses:
 
 requirements_html = get_course_about_section(request, course, "prerequisites")
 has_video = bool(get_course_about_section(request, course, "video"))
-image_url = fxl.attr._image_or_none(course_image_urls.get('large')) if isinstance(course_image_urls, dict) else None
-cover_program = dict(program, title=course.display_name_with_default, image_url=image_url or program.get('image_url'))
+## Cover: the catalogue card's source first (the backend program image), the platform's "large" URL as the
+## second candidate (it can be a CDN address that does not serve the file); ui.cover tries both.
+platform_image_url = fxl.attr._image_or_none(course_image_urls.get('large')) if isinstance(course_image_urls, dict) else None
+cover_program = dict(
+    program, title=course.display_name_with_default,
+    image_url=program.get('image_url') or platform_image_url, image_fallback_url=platform_image_url,
+)
 %>
 
 <main id="main" class="fxl-main fxl-detail" aria-label="${L('المحتوى', 'Content')}" tabindex="-1">
