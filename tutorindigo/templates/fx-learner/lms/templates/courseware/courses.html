@@ -1,0 +1,226 @@
+## fx-learner catalogue (brief 4.2): title band + breadcrumb, underline category tabs, type-to-filter search,
+## facet dropdowns (learning mode, level, duration, certificate, registration status), result count, 3-col grid.
+## Programs are rendered server-side (learner_theme helper, or the view's course list on older plugins) and
+## filtered client-side; a facet with fewer than two distinct values is not shown.
+<%page expression_filter="h"/>
+<%inherit file="../main.html" />
+<%namespace name='static' file='../static_content.html'/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%namespace name='ui' file='/fx_learner/ui.html'/>
+<%!
+import json
+%>
+
+<%
+L = fxl.attr.L
+tabs = fxl.attr.home_tabs()
+programs = fxl.attr.catalog(request, courses, tabs)
+used_categories = {c for p in programs for c in p.get('category_ids', [])}
+tabs = [tab for tab in tabs if tab['id'] in used_categories]
+categories = {tab['id']: tab['name'] for tab in tabs}
+
+level_order = [L('أساسي', 'Basic'), L('متوسط', 'Intermediate'), L('متقدم', 'Advanced')]
+duration_order = [L('3 ساعات أو أقل', '3 hours or less'), L('4 – 5 ساعات', '4 – 5 hours'), L('6 ساعات فأكثر', '6 hours or more')]
+facet_specs = [
+    ('mode', L('نمط التعلّم', 'Learning mode'), lambda p: fxl.attr.mode_label(p.get('learning_mode')), None),
+    ('level', L('المستوى', 'Level'), lambda p: fxl.attr.level_label(p.get('level')), level_order),
+    ('dur', L('المدة', 'Duration'), lambda p: fxl.attr.duration_bucket(p.get('effort_hours')), duration_order),
+    ('cert', L('الشهادة', 'Certificate'), lambda p: fxl.attr.certificate_label(p.get('has_certificate')), [L('بشهادة', 'With certificate'), L('بدون شهادة', 'No certificate')]),
+    ('status', L('حالة التسجيل', 'Registration status'), lambda p: fxl.attr.status_info(p)[0], None),
+]
+facets = []
+for facet_id, facet_name, getter, order in facet_specs:
+    values = []
+    for p in programs:
+        value = getter(p)
+        if value and value not in values:
+            values.append(value)
+    if order:
+        values.sort(key=lambda v: order.index(v) if v in order else len(order))
+    if len(values) >= 2:
+        facets.append({'id': facet_id, 'name': facet_name, 'values': values})
+
+count_words = {
+    'ar': {'0': 'لا توجد برامج', '1': 'برنامج واحد', '2': 'برنامجان', 'few': '{n} برامج', 'many': '{n} برنامجًا'},
+    'en': {'0': '0 programs', '1': '1 program', '2': '2 programs', 'few': '{n} programs', 'many': '{n} programs'},
+}['ar' if fxl.attr.is_ar() else 'en']
+%>
+
+<%block name="pagetitle">${fxl.attr.L('البرامج التدريبية', 'Training programs')}</%block>
+
+<main id="main" class="fxl-main" aria-label="${L('المحتوى', 'Content')}" tabindex="-1">
+  ${ui.pagehead(L('البرامج التدريبية', 'Training programs'), [(L('الرئيسية', 'Home'), '/'), (L('البرامج التدريبية', 'Training programs'), None)])}
+
+  <div class="fxl-wrap" data-fxl-catalog data-count-words="${json.dumps(count_words, ensure_ascii=False)}">
+    <div class="fxl-listbar">
+      % if tabs:
+      <div class="fxl-tabs" role="tablist" aria-label="${L('تصنيف البرامج', 'Program categories')}">
+        <button type="button" role="tab" aria-selected="true" data-fxl-tab="all">${L('الكل', 'All')}</button>
+        % for tab in tabs:
+        <button type="button" role="tab" aria-selected="false" data-fxl-tab="${tab['id']}">${tab['name']}</button>
+        % endfor
+      </div>
+      % endif
+      <label class="fxl-searchbox" for="fxl-q">
+        ${ui.icon('search', 18)}
+        <input id="fxl-q" type="search" placeholder="${L('ابحث باسم البرنامج', 'Search by program name')}" aria-label="${L('ابحث في البرامج التدريبية', 'Search training programs')}" autocomplete="off"/>
+      </label>
+    </div>
+
+    % if facets:
+    <div class="fxl-fbar">
+      <span class="fbar-l">${L('تصفية', 'Filter')}</span>
+      % for facet in facets:
+      <div class="fxl-fdd" data-fxl-facet="${facet['id']}">
+        <button type="button" class="fxl-fbtn" aria-haspopup="true" aria-expanded="false">
+          <span class="v">${facet['name']}</span><em class="fc" hidden></em>${ui.icon('chev', 16)}
+        </button>
+        <div class="fxl-fpop" role="group" aria-label="${facet['name']}" hidden>
+          % for value in facet['values']:
+          <label class="fopt"><input type="checkbox" value="${value}"/><span>${value}</span><em>0</em></label>
+          % endfor
+        </div>
+      </div>
+      % endfor
+      <button type="button" class="fxl-lnk" data-fxl-clear hidden>${L('مسح الكل', 'Clear all')}</button>
+    </div>
+    % endif
+
+    <div class="fxl-resbar"><div class="cnt" aria-live="polite" data-fxl-count>${fxl.attr.programs_text(len(programs))}</div></div>
+
+    <div class="fxl-gridwrap">
+      % if programs:
+      <div class="fxl-grid" data-fxl-grid>
+        % for program in programs:
+        ${ui.card(program, categories)}
+        % endfor
+      </div>
+      <div class="fxl-empty" data-fxl-empty hidden>
+        ${L('لا توجد برامج تطابق بحثك أو الفلاتر المختارة. جرّب كلمة أخرى أو امسح الفلاتر.', 'No programs match your search or filters. Try another word or clear the filters.')}
+      </div>
+      % else:
+      <div class="fxl-empty">${L('لا توجد برامج متاحة حاليًا.', 'There are no programs available right now.')}</div>
+      % endif
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var root = document.querySelector('[data-fxl-catalog]');
+  if (!root) { return; }
+  var cards = [].slice.call(root.querySelectorAll('.fxl-card'));
+  var words = JSON.parse(root.getAttribute('data-count-words'));
+  var tabs = [].slice.call(root.querySelectorAll('[data-fxl-tab]'));
+  var facets = [].slice.call(root.querySelectorAll('[data-fxl-facet]'));
+  var search = root.querySelector('#fxl-q');
+  var count = root.querySelector('[data-fxl-count]');
+  var empty = root.querySelector('[data-fxl-empty]');
+  var clear = root.querySelector('[data-fxl-clear]');
+  var state = { tab: 'all', q: '', f: {} };
+
+  function countText(n) {
+    if (n === 0) { return words['0']; }
+    if (n === 1) { return words['1']; }
+    if (n === 2) { return words['2']; }
+    return (n <= 10 ? words.few : words.many).replace('{n}', n);
+  }
+  function facetMatch(card, skip) {
+    return Object.keys(state.f).every(function (id) {
+      var selected = state.f[id];
+      return id === skip || !selected.length || selected.indexOf(card.getAttribute('data-' + id)) !== -1;
+    });
+  }
+  function baseMatch(card) {
+    var cats = (card.getAttribute('data-cats') || '').split(' ');
+    return (state.tab === 'all' || cats.indexOf(state.tab) !== -1)
+      && (!state.q || card.getAttribute('data-title').indexOf(state.q) !== -1);
+  }
+  function render() {
+    var shown = 0;
+    cards.forEach(function (card) {
+      var visible = baseMatch(card) && facetMatch(card, null);
+      card.hidden = !visible;
+      if (visible) { shown += 1; }
+    });
+    if (count) { count.textContent = countText(shown); }
+    if (empty) { empty.hidden = shown !== 0; }
+    var active = 0;
+    facets.forEach(function (facet) {
+      var id = facet.getAttribute('data-fxl-facet');
+      var selected = state.f[id] || [];
+      active += selected.length;
+      var pool = cards.filter(function (card) { return baseMatch(card) && facetMatch(card, id); });
+      [].slice.call(facet.querySelectorAll('.fopt')).forEach(function (option) {
+        var value = option.querySelector('input').value;
+        var n = pool.filter(function (card) { return card.getAttribute('data-' + id) === value; }).length;
+        option.querySelector('em').textContent = n;
+        option.classList.toggle('zero', !n && selected.indexOf(value) === -1);
+      });
+      var badge = facet.querySelector('.fc');
+      badge.hidden = !selected.length;
+      badge.textContent = selected.length;
+      facet.querySelector('.fxl-fbtn').classList.toggle('on', selected.length > 0);
+    });
+    if (clear) { clear.hidden = !active; }
+  }
+  function closeAll(except) {
+    facets.forEach(function (facet) {
+      if (facet === except) { return; }
+      facet.querySelector('.fxl-fpop').hidden = true;
+      facet.querySelector('.fxl-fbtn').setAttribute('aria-expanded', 'false');
+    });
+  }
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      state.tab = tab.getAttribute('data-fxl-tab');
+      tabs.forEach(function (t) { t.setAttribute('aria-selected', t === tab ? 'true' : 'false'); });
+      var url = new URL(window.location.href);
+      if (state.tab === 'all') { url.searchParams.delete('tab'); } else { url.searchParams.set('tab', state.tab); }
+      history.replaceState(null, '', url);
+      render();
+    });
+  });
+  if (search) {
+    search.addEventListener('input', function () { state.q = search.value.trim().toLowerCase(); render(); });
+  }
+  facets.forEach(function (facet) {
+    var id = facet.getAttribute('data-fxl-facet');
+    var button = facet.querySelector('.fxl-fbtn');
+    var pop = facet.querySelector('.fxl-fpop');
+    state.f[id] = [];
+    button.addEventListener('click', function () {
+      var open = pop.hidden;
+      closeAll(facet);
+      pop.hidden = !open;
+      button.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { var first = pop.querySelector('input'); if (first) { first.focus(); } }
+    });
+    pop.addEventListener('change', function (event) {
+      var input = event.target;
+      var selected = state.f[id];
+      var at = selected.indexOf(input.value);
+      if (input.checked && at === -1) { selected.push(input.value); }
+      if (!input.checked && at !== -1) { selected.splice(at, 1); }
+      render();
+    });
+    facet.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !pop.hidden) { closeAll(null); button.focus(); }
+    });
+  });
+  document.addEventListener('mousedown', function (event) {
+    if (!event.target.closest || !event.target.closest('.fxl-fdd')) { closeAll(null); }
+  });
+  if (clear) {
+    clear.addEventListener('click', function () {
+      Object.keys(state.f).forEach(function (id) { state.f[id] = []; });
+      [].slice.call(root.querySelectorAll('.fxl-fpop input')).forEach(function (input) { input.checked = false; });
+      render();
+    });
+  }
+  var wanted = new URL(window.location.href).searchParams.get('tab');
+  var wantedTab = tabs.filter(function (t) { return t.getAttribute('data-fxl-tab') === wanted; })[0];
+  if (wantedTab) { wantedTab.click(); } else { render(); }
+})();
+</script>
+<%def name="online_help_token()"><% return "course" %></%def>

@@ -1,0 +1,268 @@
+## fx-learner program details (brief 4.3). The enrolment CTA keeps indigo's (and the platform's) exact states,
+## hidden enrol form and click handler; only the presentation changes. The Studio overview (which carries the
+## "تنبيهات هامة" notice box, description, objectives and skills as authored) is rendered as-is inside the body.
+## Sidebar rows come from get_learner_theme_program(); start/end dates are not shown (the start date appears as
+## the status badge while registration has not opened yet).
+<%page expression_filter="h"/>
+<%namespace name='static' file='../static_content.html'/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%namespace name='ui' file='/fx_learner/ui.html'/>
+<%!
+import logging
+from django.utils.translation import gettext as _
+from django.utils.translation import pgettext
+from django.urls import reverse
+from lms.djangoapps.courseware.courses import get_course_about_section
+from openedx.core.djangolib.js_utils import js_escaped_string
+from openedx.core.djangolib.markup import clean_dangerous_html
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from lms.djangoapps.certificates.data import CertificateStatuses
+from lms.djangoapps.certificates.models import GeneratedCertificate
+try:
+    from eox_nelp.effort import format_effort_hours
+except Exception:  # older eox-nelp: show the Studio text as typed
+    format_effort_hours = None
+
+log = logging.getLogger(__name__)
+%>
+
+<%inherit file="../main.html" />
+<%block name="headextra">
+  <meta property="og:title" content="${course.display_name_with_default}" />
+  <meta property="og:description" content="${get_course_about_section(request, course, 'short_description')}" />
+</%block>
+
+<%block name="js_extra">
+  <script type="text/javascript">
+  (function() {
+    $(".register").click(function(event) {
+      $("#class_enroll_form").submit();
+      event.preventDefault();
+    });
+
+    $('#class_enroll_form').on('ajax:complete', function(event, xhr) {
+      if (xhr.status == 200) {
+        if (xhr.responseText == "") {
+          location.href = "${reverse('dashboard') | n, js_escaped_string}";
+        }
+        else {
+          location.href = xhr.responseText;
+        }
+      } else if (xhr.status == 403) {
+        // redirect unauthenticated user to the login page
+        location.replace("${reverse('signin_user') | n, js_escaped_string}?next=" + encodeURIComponent("${request.path | n, js_escaped_string}"));
+      } else {
+        $('#register_error').text(
+            (xhr.responseText ? xhr.responseText : "${_("An error occurred. Please try again later.") | n, js_escaped_string}")
+        ).css("display", "block");
+      }
+    });
+
+  })(this)
+  </script>
+
+  <script src="${static.url('js/course_info.js')}"></script>
+</%block>
+
+<%block name="pagetitle">${course.display_name_with_default}</%block>
+
+## The enrolment call to action, in the platform's states (same order as indigo's template).
+<%def name="cta(side=False)">
+<% side_class = ' side-cta' if side else '' %>
+% if user.is_authenticated and registered:
+  % if show_courseware_link:
+  <a href="${course_target}" class="fxl-btn-primary${side_class}">${fxl.attr.L('أكمل التعلّم', 'Continue learning')}</a>
+  % else:
+  <span class="fxl-btn-primary is-disabled${side_class}" aria-disabled="true">${_("Already Enrolled")}</span>
+  % endif
+% elif is_course_full:
+  <span class="fxl-btn-primary is-disabled${side_class}" aria-disabled="true">${fxl.attr.L('اكتمل العدد', 'Fully booked')}</span>
+% elif invitation_only and not can_enroll:
+  <span class="fxl-btn-primary is-disabled${side_class}" aria-disabled="true">${_("Enrollment in this course is by invitation only")}</span>
+% elif not is_shib_course and not can_enroll:
+  <span class="fxl-btn-primary is-disabled${side_class}" aria-disabled="true">${ui.icon('lock', 16)}${fxl.attr.L('التسجيل مغلق', 'Registration closed')}</span>
+% elif allow_anonymous:
+  % if show_courseware_link:
+  <a href="${course_target}" class="fxl-btn-primary${side_class}">${_("View Course")}</a>
+  % endif
+% else:
+  <%
+    reg_href = ecommerce_checkout_link if ecommerce_checkout else "#"
+    href_class = "add-to-cart" if single_paid_mode else "register"
+  %>
+  <a href="${reg_href}" class="fxl-btn-primary ${href_class}${side_class}">${fxl.attr.L('سجّل الآن', 'Register now')}</a>
+  % if not side:
+  <div id="register_error"></div>
+  % endif
+% endif
+</%def>
+
+<%
+L = fxl.attr.L
+program = fxl.attr.program(request, course)
+status_text, status_class = fxl.attr.status_info(program)
+
+effort_text = fxl.attr.hours_text(program.get('effort_hours'))
+if not effort_text:
+    raw_effort = get_course_about_section(request, course, "effort")
+    if raw_effort:
+        effort_text = format_effort_hours(raw_effort) if format_effort_hours else raw_effort
+
+if program.get('has_certificate') is True:
+    certificate_text = L('عند الإكمال', 'On completion')
+elif program.get('has_certificate') is False:
+    certificate_text = L('بدون شهادة', 'No certificate')
+else:
+    certificate_text = ''
+
+price_text = ''
+if course_price and is_cosmetic_price_enabled:
+    price_text = course_price
+elif program.get('price'):
+    price_text = program['price']
+elif not program.get('_fallback'):
+    price_text = L('مجانًا', 'Free')
+
+facts = [
+    ('clock', L('المدة', 'Duration'), effort_text),
+    ('layers', L('عدد الوحدات', 'Units'), fxl.attr.num(program['units']) if program.get('units') else ''),
+    ('build', L('نمط التعلّم', 'Learning mode'), fxl.attr.mode_label(program.get('learning_mode'))),
+    ('level', L('المستوى', 'Level'), fxl.attr.level_label(program.get('level'))),
+    ('cert', L('الشهادة', 'Certificate'), certificate_text),
+]
+facts = [fact for fact in facts if fact[2]]
+
+## Every prerequisite, by display name (indigo, cr-r6): two queries at most. cache_if_anonymous caches this page
+## for anonymous users alone, so the per-learner marks never reach the cache.
+prereq_items = []
+if pre_requisite_courses:
+    prereq_keys = [prc['key'] for prc in pre_requisite_courses]
+    prereq_names = {o.id: o.display_name for o in CourseOverview.objects.filter(id__in=prereq_keys)}
+    prereq_done = set()
+    if user.is_authenticated:
+        prereq_done = set(GeneratedCertificate.objects.filter(
+            user=user, course_id__in=prereq_keys, status=CertificateStatuses.downloadable,
+        ).values_list('course_id', flat=True))
+    for prereq_key in prereq_keys:
+        if prereq_key not in prereq_names:
+            log.error("About page of %s: prerequisite course %s does not exist; skipped.", course.id, prereq_key)
+            continue
+        prereq_items.append((prereq_key, prereq_names[prereq_key], prereq_key in prereq_done))
+
+requirements_html = get_course_about_section(request, course, "prerequisites")
+has_video = bool(get_course_about_section(request, course, "video"))
+image_url = fxl.attr._image_or_none(course_image_urls.get('large')) if isinstance(course_image_urls, dict) else None
+cover_program = dict(program, title=course.display_name_with_default, image_url=image_url or program.get('image_url'))
+%>
+
+<main id="main" class="fxl-main fxl-detail" aria-label="${L('المحتوى', 'Content')}" tabindex="-1">
+  <div class="fxl-phead">
+    <div class="fxl-wrap">
+      <nav class="fxl-crumbs" aria-label="${L('مسار التنقل', 'Breadcrumb')}">
+        <a href="/">${L('الرئيسية', 'Home')}</a><span class="sep" aria-hidden="true">/</span>
+        <a href="/courses">${L('البرامج التدريبية', 'Training programs')}</a><span class="sep" aria-hidden="true">/</span>
+        <span class="here" aria-current="page">${course.display_name_with_default}</span>
+      </nav>
+      <div class="fxl-detail-top">
+        <div class="head">
+          <h1>${course.display_name_with_default}</h1>
+          % if status_text and program.get('status') != 'open':
+          <div class="fxl-badges"><span class="fxl-state ${status_class}">${status_text}</span></div>
+          % endif
+          ${cta()}
+        </div>
+        <div class="art">
+          % if has_video:
+          <a href="#video-modal" class="fxl-cover media" rel="leanModal" aria-label="${L('تشغيل الفيديو التعريفي', 'Play the introduction video')}">
+            ${ui.cover(cover_program)}<span class="play" aria-hidden="true"></span>
+          </a>
+          % else:
+          <div class="fxl-cover">${ui.cover(cover_program)}</div>
+          % endif
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fxl-wrap">
+    <div class="fxl-detail-cols">
+      <div class="fxl-detail-main">
+        % if staff_access and studio_url is not None:
+        <div class="fxl-staff-note">
+          <a class="fxl-lnk" href="${studio_url}">${_("View About Page in studio")}</a>
+        </div>
+        % endif
+        <div class="fxl-overview">
+          ${clean_dangerous_html(get_course_about_section(request, course, "overview"))}
+        </div>
+      </div>
+
+      <aside class="fxl-detail-side">
+        <div class="fxl-panel">
+          <h2>${L('تفاصيل البرنامج', 'Program details')}</h2>
+          <div class="fxl-facts">
+            % for icon_name, label, value in facts:
+            <div>${ui.icon(icon_name, 17)}<span>${label}</span><b>${value}</b></div>
+            % endfor
+            % if status_text:
+            <div>${ui.icon('cal', 17)}<span>${L('حالة التسجيل', 'Registration status')}</span><span class="fxl-state ${status_class}">${status_text}</span></div>
+            % endif
+            % if price_text:
+            <div>${ui.icon('money', 17)}<span>${L('الرسوم', 'Fees')}</span><b>${price_text}</b></div>
+            % endif
+          </div>
+
+          % if prereq_items:
+          <div class="fxl-prereq">
+            <h3>${_("Prerequisites")}</h3>
+            <p class="tip">${_("You must complete the following courses first:")}</p>
+            <ul>
+              % for prereq_key, prereq_name, prereq_is_done in prereq_items:
+              <li class="${'is-completed' if prereq_is_done else ''}">
+                <a href="${reverse('about_course', args=[str(prereq_key)])}">${prereq_name}</a>
+                % if prereq_is_done:
+                <span class="sr">${_("Completed")}</span>
+                % endif
+              </li>
+              % endfor
+            </ul>
+          </div>
+          % endif
+
+          % if requirements_html:
+          <div class="fxl-prereq">
+            <h3>${_("Requirements")}</h3>
+            <div>${requirements_html}</div>
+          </div>
+          % endif
+
+          ${cta(side=True)}
+        </div>
+
+        % if sidebar_html_enabled and get_course_about_section(request, course, "about_sidebar_html"):
+        <section class="fxl-panel about-sidebar-html">
+          ${get_course_about_section(request, course, "about_sidebar_html")}
+        </section>
+        % endif
+      </aside>
+    </div>
+  </div>
+</main>
+
+## Need to put this hidden form on the page so that the registration button works.
+%if active_reg_button or is_shib_course:
+  <div style="display: none;">
+    <form id="class_enroll_form" method="post" data-remote="true" action="${reverse('change_enrollment')}">
+      <fieldset class="enroll_fieldset">
+        <legend class="sr">${pgettext("self","Enroll")}</legend>
+        <input name="course_id" type="hidden" value="${course.id}">
+        <input name="enrollment_action" type="hidden" value="enroll">
+      </fieldset>
+      <div class="submit">
+        <input name="submit" type="submit" value="${pgettext('self','enroll')}">
+      </div>
+    </form>
+  </div>
+%endif
+
+<%include file="../video_modal.html" />

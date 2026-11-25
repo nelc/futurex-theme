@@ -1,0 +1,65 @@
+## mako
+## fx-learner footer (brief 3.3): the tenant's existing footer config (copyright, links, social), restyled,
+## plus the entity's own site link from entity_identity (site_label / site_url).
+<%page expression_filter="h"/>
+<%!
+  from lms.djangoapps.branding.api import get_footer
+%>
+<%namespace name='static' file='static_content.html'/>
+<%namespace name='fx_static' file='fx_templates/fx_static_content.html'/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%namespace name='ui' file='/fx_learner/ui.html'/>
+
+<%
+fx_footer = fx_static.get_fx_config_value('footer', default_value={})
+if not isinstance(fx_footer, dict):
+    fx_footer = {}
+footer_links = fx_static.get_fx_link_sections(fx_footer.get('sections', []))
+social_links = [
+    link for link in fx_static.get_fx_social_media_links(fx_footer.get('social_media_links', []))
+    if ui.has_social_icon(link.get('provider'))
+]
+copyright_text = fx_static.t(fx_footer.get('copyrights_text', '')) or ''
+ent = fxl.attr.entity(static.get_platform_name())
+%>
+
+<footer class="fxl-footer" id="footer"
+  % if bidi:
+    dir=${bidi}
+  % endif
+>
+  <div class="fxl-wrap fxl-foot">
+    % if copyright_text:
+    <small>${copyright_text}</small>
+    % endif
+    % if footer_links or (ent['site_label'] and ent['site_url']):
+    <ul class="fxl-flinks">
+      % for link in footer_links:
+      <li><a href="${link['link']}" ${link['new_tab'] | n}>${fx_static.t(link.get('link_title'))}</a></li>
+      % endfor
+      % if ent['site_label'] and ent['site_url']:
+      <li><a href="${ent['site_url']}" target="_blank" rel="noopener">${ent['site_label']}${ui.icon('ext', 13)}</a></li>
+      % endif
+    </ul>
+    % endif
+    % if social_links:
+    <div class="fxl-social">
+      % for link in social_links:
+      <a href="${link['value']}" target="_blank" rel="noopener" aria-label="${link['provider']}">${ui.social_icon(link['provider'])}</a>
+      % endfor
+    </div>
+    % endif
+  </div>
+</footer>
+
+% if include_dependencies:
+  <%static:js group='base_vendor'/>
+  <%static:css group='style-vendor'/>
+  <%include file="widgets/segment-io.html" />
+  <%include file="widgets/segment-io-footer.html" />
+% endif
+% if footer_css_urls:
+  % for url in footer_css_urls:
+    <link rel="stylesheet" type="text/css" href="${url}"></link>
+  % endfor
+% endif

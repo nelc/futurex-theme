@@ -1,0 +1,13 @@
+// Indigo's full stylesheet first (every page fx-learner does not redesign keeps indigo's look),
+// then the fx-learner layer, scoped to .fxl-* classes and driven by CSS custom properties.
+@import "../../../../../../../indigo/lms/static/sass/partials/lms/theme/extras";
+
+@import "../../../fxl/tokens";
+@import "../../../fxl/base";
+@import "../../../fxl/header";
+@import "../../../fxl/footer";
+@import "../../../fxl/cards";
+@import "../../../fxl/home";
+@import "../../../fxl/catalog";
+@import "../../../fxl/detail";
+@import "../../../fxl/pages";

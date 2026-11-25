@@ -1,0 +1,29 @@
+## mako
+## indigo's head-extra (fx_head_extra + css overrides), then the fx-learner brand token: the tenant's
+## visual_identity primary colour replaces the default brand green, exactly where indigo reads it.
+<%namespace name='static' file='static_content.html'/>
+<%namespace name='fx_static' file='fx_templates/fx_static_content.html'/>
+<% style_overrides_file = static.get_value('css_overrides_file') %>
+
+<%include file="fx_templates/fx_head_extra.html" />
+
+<%
+import re
+fxl_brand = None
+fxl_identity = fx_static.get_fx_config_value('visual_identity', default_value={})
+for fxl_color in (fxl_identity.get('colors', []) if isinstance(fxl_identity, dict) else []):
+    if not isinstance(fxl_color, dict) or fxl_color.get('color_type') != 'primary_color':
+        continue
+    if re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', fxl_color.get('hex') or ''):
+        fxl_brand = fxl_color['hex']
+%>
+<meta name="color-scheme" content="light">
+% if fxl_brand:
+<style>html:root { --brand: ${fxl_brand}; }</style>
+% endif
+
+% if style_overrides_file:
+  <link rel="stylesheet" type="text/css" href="${static.url(style_overrides_file)}" />
+% endif
+
+<%include file="fx_templates/fx_css_override.html" />

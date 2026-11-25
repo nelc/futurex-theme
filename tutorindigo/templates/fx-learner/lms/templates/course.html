@@ -1,0 +1,20 @@
+## fx-learner course card (brief 4.8) for every place that still includes course.html with a CourseOverview
+## (indigo's courses_list.html on custom pages, for example). Same signature and wrapper as indigo's, so its
+## homepage-tabs script (data-fx-course-id) keeps working; the card itself is the shared fx-learner card.
+<%page args="course, source_page='', tab_course_id=None" expression_filter="h"/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%namespace name='ui' file='/fx_learner/ui.html'/>
+<%
+program = fxl.attr.from_course(course)
+%>
+% if source_page == 'main_page':
+  % if tab_course_id:
+<div class="col-sm-4 mb-4 fxl-card-cell" data-fx-course-id="${tab_course_id}">
+  % else:
+<div class="col-sm-4 mb-4 fxl-card-cell">
+  % endif
+  ${ui.card(program)}
+</div>
+% else:
+${ui.card(program)}
+% endif

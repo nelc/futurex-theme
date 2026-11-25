@@ -1,0 +1,227 @@
+// Header (brief 3.1) and account menu (brief 3.2)
+.fxl-lang-form { display: none !important; } // indigo's language form: kept for its behaviour, never shown
+
+.fxl-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font);
+  color: var(--text);
+
+  *, *::before, *::after { box-sizing: border-box; }
+  a { text-decoration: none; }
+  button { font-family: var(--font); }
+}
+
+.fxl-headrow {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-height: 72px;
+}
+
+.fxl-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text) !important;
+  text-align: start;
+
+  .mark { display: inline-flex; align-items: center; flex: 0 0 auto; }
+  .mark img { height: 38px; width: auto; max-width: 160px; display: block; object-fit: contain; }
+  .nm { display: flex; flex-direction: column; max-width: 280px; }
+  .nm .t { font-size: 17px; font-weight: 700; line-height: 1.3; color: var(--text); }
+  .nm .o { font-size: 12.5px; font-weight: 400; line-height: 1.4; color: #8a8f98; }
+}
+
+.fxl-nav {
+  display: flex;
+  align-items: stretch;
+  margin-inline-start: 20px;
+
+  a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text) !important;
+    padding: 8px 16px;
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    white-space: nowrap;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset-inline: 16px;
+      bottom: 0;
+      height: 3px;
+      border-radius: 3px 3px 0 0;
+      background: transparent;
+    }
+
+    &:hover { background: var(--sunk); }
+    &:hover::before { background: var(--n400); }
+    &[aria-current="page"] { color: var(--brand) !important; font-weight: 600; }
+    &[aria-current="page"]::before { background: var(--brand); }
+  }
+}
+
+.fxl-headtools {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fxl-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: none;
+  text-shadow: none;
+
+  &:hover, &:focus { background: var(--sunk); color: var(--text); }
+}
+
+.fxl-acct { position: relative; }
+
+.fxl-acct-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding-block: 0;
+  padding-inline: 6px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: none;
+  text-shadow: none;
+
+  &:hover, &:focus, &[aria-expanded="true"] { background: var(--sunk); color: var(--text); }
+}
+
+.fxl-header .av {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--on-brand);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex: 0 0 auto;
+}
+
+.fxl-acct-menu {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 50px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--pop);
+  padding: 8px;
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .am-head { display: flex; gap: 10px; align-items: center; padding: 8px 8px 10px; }
+  .am-head b { display: block; font-size: 15px; line-height: 1.5; }
+  .am-head small { display: block; color: var(--text-faint); font-size: 12px; }
+
+  .am-cont {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 4px 6px;
+    padding: 12px;
+    border-radius: var(--r-md);
+    background: var(--brand-soft);
+    border: 1px solid var(--brand-line);
+    color: var(--text) !important;
+
+    small { color: var(--brand); font-weight: 600; font-size: 12px; }
+    b { font-size: 14px; font-weight: 600; line-height: 1.5; }
+  }
+
+  .am-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: var(--r-sm);
+    color: var(--text) !important;
+    font-size: 15px;
+    width: 100%;
+
+    &:hover, &:focus { background: var(--sunk); }
+    svg { color: var(--text-faint); flex: 0 0 auto; }
+    span { flex: 1; }
+
+    em {
+      margin-inline-start: auto;
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--sunk);
+      border-radius: var(--r-sm);
+      padding: 0 6px;
+      min-width: 22px;
+      text-align: center;
+    }
+
+    &.out, &.out svg { color: var(--err-fg) !important; }
+  }
+
+  .am-sep { height: 1px; background: var(--line-soft); margin: 4px 6px; }
+}
+
+@media (max-width: $fxl-bp-medium) {
+  .fxl-headrow { flex-wrap: wrap; min-height: 0; padding-block: 10px 0; row-gap: 6px; }
+  .fxl-logo { order: 1; min-height: 44px; }
+  .fxl-headtools { order: 2; }
+
+  .fxl-nav {
+    order: 3;
+    flex: 1 0 100%;
+    margin: 0 calc(-1 * var(--gutter));
+    padding-inline: 4px;
+    overflow-x: auto;
+    border-top: 1px solid var(--line-soft);
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
+    a { min-height: 48px; font-size: 15px; padding: 0 12px; }
+    a::before { inset-inline: 10px; }
+  }
+}
+
+@media (max-width: $fxl-bp-small) {
+  .fxl-acct-btn .nm, .fxl-acct-btn > svg, .fxl-lang-btn .txt { display: none; }
+  .fxl-acct-btn { padding: 0 6px; }
+  .fxl-logo .nm { max-width: 46vw; }
+  .fxl-logo .nm .t { font-size: 14px; }
+}

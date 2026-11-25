@@ -1,0 +1,19 @@
+## fx-learner About (brief 4.4): title band + breadcrumb, then indigo's section engine with the two new
+## learner-theme section types allowed here only: vision_mission_v1 and chips_v1 (partials in fx_templates/fx_page/).
+<%inherit file="../main.html" />
+<%namespace name='fx_static' file='../fx_templates/fx_static_content.html'/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%namespace name='ui' file='/fx_learner/ui.html'/>
+<%
+allowed_sections = fx_static.get_all_fx_section_names()
+allowed_sections.remove('featured_courses_v1')
+allowed_sections.extend(['vision_mission_v1', 'chips_v1'])
+page_title = fxl.attr.L('عن المنصة', 'About the platform')
+%>
+<%def name="pagetitle()">${fxl.attr.L('عن المنصة', 'About the platform')}</%def>
+<main id="main" class="fxl-main" tabindex="-1">
+  ${ui.pagehead(page_title, [(fxl.attr.L('الرئيسية', 'Home'), '/'), (page_title, None)])}
+  <div class="fxl-wrap fxl-static fxl-static-about">
+    <%include file="../fx_templates/fx_page/page.html" args="page_name='pages_about_us', allowed_sections=allowed_sections"/>
+  </div>
+</main>

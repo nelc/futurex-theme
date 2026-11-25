@@ -1,0 +1,66 @@
+## fx-learner live_metrics_section_v1 ("أرقام المنصة", brief 4.4): same data and options as indigo's partial
+## (live statistics of the tenant), drawn as the prototype's stat tiles. Indigo's version centres with inline
+## !important styles that a stylesheet cannot override, hence this override.
+<%page args="page_contents" expression_filter="h"/>
+<%namespace name='fx_static' file='../fx_static_content.html'/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%!
+import logging
+from crum import get_current_request
+from futurex_openedx_extensions.helpers.tenants import get_all_tenants_info
+from futurex_openedx_extensions.dashboard.statistics.live import get_live_statistics
+
+log = logging.getLogger(__name__)
+%>
+<%
+allowed_statistics = {
+    'courses': {'ar': 'برنامجًا تدريبيًا', 'en': 'Training programs', 'fr': 'Programmes'},
+    'learners': {'ar': 'متدرّبًا مسجَّلًا', 'en': 'Registered trainees', 'fr': 'Apprenants inscrits'},
+    'certificates': {'ar': 'شهادة صادرة', 'en': 'Certificates issued', 'fr': 'Certificats délivrés'},
+    'enrollments': {'ar': 'تسجيل في البرامج', 'en': 'Enrollments', 'fr': 'Inscriptions'},
+    'learning_hours': {'ar': 'ساعات تعلّم', 'en': 'Learning hours', 'fr': "Heures d'apprentissage"},
+}
+metrics = []
+for declared in page_contents.get('options') or []:
+    if not isinstance(declared, dict) or not declared.get('is_checked'):
+        continue
+    key = (declared.get('key') or '').lower()
+    if key not in allowed_statistics:
+        continue
+    metrics.append({
+        'api_key': key + '_count',
+        'title': fx_static.t(declared.get('title')) or fx_static.t(allowed_statistics[key]),
+        'hint': fx_static.t(declared.get('hint') or {}),
+    })
+
+live_statistics = {}
+if metrics:
+    try:
+        tenant_id = get_all_tenants_info()['tenant_by_site'].get(get_current_request().site.domain)
+        live_statistics = get_live_statistics(tenant_id) or {}
+    except Exception:
+        log.exception('fx-learner: live statistics unavailable')
+
+title = fx_static.t(page_contents.get('title'))
+description = fx_static.t(page_contents.get('description'))
+div_id = page_contents.get('div_id') if isinstance(page_contents.get('div_id'), str) else ''
+%>
+% if metrics:
+% if div_id:
+<section class="fxl-sec" id="${div_id}">
+% else:
+<section class="fxl-sec">
+% endif
+  % if title:
+  <h2 class="fxl-secT">${title}</h2>
+  % endif
+  % if description:
+  <p class="fxl-sec-desc">${description}</p>
+  % endif
+  <div class="fxl-nums">
+    % for metric in metrics:
+    <div title="${metric['hint']}"><b>${fxl.attr.num(live_statistics.get(metric['api_key'], 0) or 0)}</b><small>${metric['title']}</small></div>
+    % endfor
+  </div>
+</section>
+% endif

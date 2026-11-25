@@ -1,0 +1,28 @@
+## fx-learner section vision_mission_v1: {vision: {ar, en}, mission: {ar, en}, div_id?, title?}.
+## Resolved by indigo's fx_page/page.html include ("_section_<type>.html"), found here first through the
+## theme lookup; allowed only where an fx-learner template adds the type to allowed_sections.
+<%page args="page_contents" expression_filter="h"/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%
+vision = fxl.attr.tr(page_contents.get('vision'))
+mission = fxl.attr.tr(page_contents.get('mission'))
+title = fxl.attr.tr(page_contents.get('title')) or fxl.attr.L('الرؤية والرسالة', 'Vision and mission')
+div_id = page_contents.get('div_id') if isinstance(page_contents.get('div_id'), str) else ''
+%>
+% if vision or mission:
+% if div_id:
+<section class="fxl-sec" id="${div_id}">
+% else:
+<section class="fxl-sec">
+% endif
+  <h2 class="fxl-secT">${title}</h2>
+  <div class="fxl-vm">
+    % if vision:
+    <div class="vmbox"><h3>${fxl.attr.L('رؤيتنا', 'Our vision')}</h3><p>${vision}</p></div>
+    % endif
+    % if mission:
+    <div class="vmbox"><h3>${fxl.attr.L('رسالتنا', 'Our mission')}</h3><p>${mission}</p></div>
+    % endif
+  </div>
+</section>
+% endif

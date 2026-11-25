@@ -1,0 +1,41 @@
+// fx-learner design tokens: the LIGHT palette of the "منصات الجهات — تجربة المتعلم" prototype (NDS / futurex.sa).
+// Light only by decision; no dark palette. --brand is overridden per tenant by head-extra.html
+// (visual_identity primary colour); every brand shade below is derived from it.
+:root {
+  --p25: #f7fdf9; --p50: #f3fcf6; --p100: #e6f6ec; --p300: #88dbad; --p600: #1b8354; --p700: #166a45; --p800: #14573a;
+  --n0: #ffffff; --n50: #f9fafb; --n100: #f3f4f6; --n200: #e5e7eb; --n300: #d2d6db; --n400: #9da4ae;
+  --n500: #6c737f; --n600: #4d5761; --n700: #384250; --n800: #1f2a37; --n950: #0d121c; --ink: #161616;
+  --ok-bg: #ecfdf3; --ok-line: #abefc6; --ok-fg: #067647;
+  --info-bg: #eff8ff; --info-line: #b2ddff; --info-fg: #175cd3;
+  --warn-bg: #fffaeb; --warn-line: #fedf89; --warn-fg: #b54708;
+  --err-bg: #fef3f2; --err-line: #fecdca; --err-fg: #b42318;
+  --hero-bg: #faf7f9;
+
+  --bg: var(--n0); --surface: var(--n0); --muted-surface: var(--n50); --sunk: var(--n100);
+  --line: var(--n300); --line-soft: var(--n200);
+  --text: var(--ink); --text-muted: var(--n600); --text-faint: var(--n500);
+  --brand: var(--p600);
+  --brand-hover: color-mix(in srgb, var(--brand) 82%, #000);
+  --brand-deep: color-mix(in srgb, var(--brand) 70%, #000);
+  --brand-soft: color-mix(in srgb, var(--brand) 6%, #fff);
+  --brand-line: color-mix(in srgb, var(--brand) 45%, #fff);
+  --on-brand: #ffffff;
+  --overlay: rgba(13, 18, 28, .5);
+  --font: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+  --r-sm: 4px; --r-md: 8px; --r-lg: 16px;
+  --radius: var(--r-lg);
+  --pop: 0 12px 32px rgba(13, 18, 28, .14);
+  --wrap: 1280px; --wrap-narrow: 960px; --wrap-legal: 880px;
+  --gutter: 16px;
+  color-scheme: light;
+}
+
+@media (min-width: 1024px) {
+  :root { --gutter: 32px; }
+}
+
+// Breakpoints of the prototype.
+$fxl-bp-phone: 600px;
+$fxl-bp-small: 760px;
+$fxl-bp-medium: 860px;
+$fxl-bp-grid: 960px;

@@ -1,0 +1,193 @@
+// Catalogue (brief 4.2): underline tabs + search bar, facet dropdowns, result count
+.fxl-listbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+  border-bottom: 1px solid var(--line);
+
+  .fxl-searchbox { flex: 0 1 340px; margin-bottom: 8px; min-height: 40px; margin-inline-start: auto; }
+
+  @media (max-width: $fxl-bp-small) {
+    flex-direction: column-reverse;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+
+    > * { min-width: 0; max-width: 100%; }
+    .fxl-searchbox { flex-basis: auto; margin-bottom: 4px; margin-inline-start: 0; }
+  }
+}
+
+.fxl-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+
+  button {
+    position: relative;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    box-shadow: none;
+    text-shadow: none;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset-inline: 12px;
+      bottom: 0;
+      height: 3px;
+      border-radius: 3px 3px 0 0;
+      background: transparent;
+    }
+
+    &:hover { background: var(--sunk); color: var(--text); }
+    &[aria-selected="true"] { color: var(--brand); font-weight: 600; }
+    &[aria-selected="true"]::before { background: var(--brand); }
+  }
+}
+
+.fxl-fbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+
+  .fbar-l { color: var(--text-muted); font-size: 14px; font-weight: 500; margin-inline-end: 4px; }
+
+  @media (max-width: $fxl-bp-small) {
+    .fbar-l { display: none; }
+  }
+}
+
+.fxl-fdd { position: relative; flex: 0 0 auto; }
+
+.fxl-fbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 14px;
+  white-space: nowrap;
+  box-shadow: none;
+  text-shadow: none;
+
+  &:hover, &:focus { background: var(--sunk); color: var(--text); }
+  .v { font-weight: 600; }
+  svg { flex: 0 0 auto; color: var(--text-muted); }
+  &.on { border-color: var(--brand); background: var(--brand-soft); }
+  &.on .v { color: var(--brand); }
+
+  .fc {
+    font-style: normal;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 99px;
+    background: var(--brand);
+    color: var(--on-brand);
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+.fxl-fpop {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-start: 0;
+  z-index: 35;
+  width: 280px;
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--pop);
+
+  .fopt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 9px 10px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text);
+
+    &:hover { background: var(--sunk); }
+    input { width: 18px; height: 18px; margin: 0; accent-color: var(--brand); flex: 0 0 auto; }
+    span { flex: 1; min-width: 0; }
+
+    em {
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--sunk);
+      border-radius: var(--r-sm);
+      padding: 0 7px;
+      min-width: 24px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    &.zero { color: var(--text-faint); }
+    &:has(input:checked) { color: var(--brand); font-weight: 600; }
+  }
+
+  @media (max-width: $fxl-bp-small) {
+    // bottom sheet on phones
+    position: fixed;
+    inset: auto 0 0 0;
+    width: auto;
+    max-height: 75vh;
+    border-radius: 16px 16px 0 0;
+    padding: 12px 16px 16px;
+    z-index: 120;
+  }
+}
+
+.fxl-resbar {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  min-height: 32px;
+
+  .cnt { font-size: 14px; color: var(--text-muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+}
+
+.fxl-gridwrap { padding-top: 24px; }

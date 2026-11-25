@@ -1,0 +1,26 @@
+## fx-learner section chips_v1: {title: {ar, en}, items: [{ar, en}, ...], div_id?} (training fields,
+## target audiences, ...). Same resolution rule as _section_vision_mission_v1.html.
+<%page args="page_contents" expression_filter="h"/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%
+title = fxl.attr.tr(page_contents.get('title'))
+items = page_contents.get('items') if isinstance(page_contents.get('items'), list) else []
+items = [text for text in (fxl.attr.tr(item) for item in items) if text]
+div_id = page_contents.get('div_id') if isinstance(page_contents.get('div_id'), str) else ''
+%>
+% if items:
+% if div_id:
+<section class="fxl-sec" id="${div_id}">
+% else:
+<section class="fxl-sec">
+% endif
+  % if title:
+  <h2 class="fxl-secT">${title}</h2>
+  % endif
+  <div class="fxl-chips">
+    % for text in items:
+    <span>${text}</span>
+    % endfor
+  </div>
+</section>
+% endif
