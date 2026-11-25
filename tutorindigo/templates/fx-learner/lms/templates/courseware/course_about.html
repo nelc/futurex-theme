@@ -118,10 +118,8 @@ else:
 price_text = ''
 if course_price and is_cosmetic_price_enabled:
     price_text = course_price
-elif program.get('price'):
-    price_text = program['price']
-elif not program.get('_fallback'):
-    price_text = L('مجانًا', 'Free')
+else:
+    price_text = fxl.attr.price_text(program)
 
 facts = [
     ('clock', L('المدة', 'Duration'), effort_text),

@@ -13,8 +13,7 @@ import json
 
 <%
 L = fxl.attr.L
-tabs = fxl.attr.home_tabs()
-programs = fxl.attr.catalog(request, courses, tabs)
+programs, tabs = fxl.attr.catalog_view(request, courses)
 used_categories = {c for p in programs for c in p.get('category_ids', [])}
 tabs = [tab for tab in tabs if tab['id'] in used_categories]
 categories = {tab['id']: tab['name'] for tab in tabs}
