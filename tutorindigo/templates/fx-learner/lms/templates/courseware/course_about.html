@@ -1,6 +1,8 @@
 ## fx-learner program details (brief 4.3). The enrolment CTA keeps indigo's (and the platform's) exact states,
-## hidden enrol form and click handler; only the presentation changes. The Studio overview (which carries the
-## "تنبيهات هامة" notice box, description, objectives and skills as authored) is rendered as-is inside the body.
+## hidden enrol form and click handler; only the presentation changes. After a plain enrolment (empty 200) the
+## learner goes to the tenant's learner home (LEARNER_HOME_MICROFRONTEND_URL), not the legacy /dashboard.
+## The Studio overview (which carries the "تنبيهات هامة" notice box, description, objectives and skills as
+## authored) is rendered as-is inside the body.
 ## Sidebar rows come from get_learner_theme_program(); start/end dates are not shown (the start date appears as
 ## the status badge while registration has not opened yet).
 <%page expression_filter="h"/>
@@ -43,7 +45,7 @@ log = logging.getLogger(__name__)
     $('#class_enroll_form').on('ajax:complete', function(event, xhr) {
       if (xhr.status == 200) {
         if (xhr.responseText == "") {
-          location.href = "${reverse('dashboard') | n, js_escaped_string}";
+          location.href = "${fxl.attr.learner_home_redirect() | n, js_escaped_string}";
         }
         else {
           location.href = xhr.responseText;
@@ -73,7 +75,7 @@ log = logging.getLogger(__name__)
   % if show_courseware_link:
   <a href="${course_target}" class="fxl-btn-primary${side_class}">${fxl.attr.L('أكمل التعلّم', 'Continue learning')}</a>
   % else:
-  <span class="fxl-btn-primary is-disabled${side_class}" aria-disabled="true">${_("Already Enrolled")}</span>
+  <a href="${fxl.attr.learner_urls()['my']}" class="fxl-btn-ghost${side_class}">${_("Already Enrolled")}<span aria-hidden="true">·</span>${fxl.attr.L('برامجي', 'My programs')}${ui.arrow(16)}</a>
   % endif
 % elif is_course_full:
   <span class="fxl-btn-primary is-disabled${side_class}" aria-disabled="true">${fxl.attr.L('اكتمل العدد', 'Fully booked')}</span>
@@ -149,8 +151,13 @@ if pre_requisite_courses:
 
 requirements_html = get_course_about_section(request, course, "prerequisites")
 has_video = bool(get_course_about_section(request, course, "video"))
-image_url = fxl.attr._image_or_none(course_image_urls.get('large')) if isinstance(course_image_urls, dict) else None
-cover_program = dict(program, title=course.display_name_with_default, image_url=image_url or program.get('image_url'))
+## Cover: the catalogue card's source first (the backend program image), the platform's "large" URL as the
+## second candidate (it can be a CDN address that does not serve the file); ui.cover tries both.
+platform_image_url = fxl.attr._image_or_none(course_image_urls.get('large')) if isinstance(course_image_urls, dict) else None
+cover_program = dict(
+    program, title=course.display_name_with_default,
+    image_url=program.get('image_url') or platform_image_url, image_fallback_url=platform_image_url,
+)
 %>
 
 <main id="main" class="fxl-main fxl-detail" aria-label="${L('المحتوى', 'Content')}" tabindex="-1">

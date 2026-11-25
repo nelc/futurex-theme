@@ -11,8 +11,9 @@
   color: var(--text);
 
   *, *::before, *::after { box-sizing: border-box; }
-  a { text-decoration: none; }
-  button { font-family: var(--font); }
+  // The platform underlines every a:not(.btn) on hover/focus (and :visited:hover) with more specificity than a
+  // plain descendant rule; the header's links (logo, nav, account menu) never underline, in any state.
+  a, a:hover, a:focus, a:active, a:visited { text-decoration: none !important; }
 }
 
 .fxl-headrow {
@@ -92,7 +93,7 @@
   box-shadow: none;
   text-shadow: none;
 
-  &:hover, &:focus { background: var(--sunk); color: var(--text); }
+  &:hover:not(:disabled) { background: var(--sunk); color: var(--text); }
 }
 
 .fxl-acct { position: relative; }
@@ -114,7 +115,7 @@
   box-shadow: none;
   text-shadow: none;
 
-  &:hover, &:focus, &[aria-expanded="true"] { background: var(--sunk); color: var(--text); }
+  &:hover:not(:disabled), &[aria-expanded="true"] { background: var(--sunk); color: var(--text); }
 }
 
 .fxl-header .av {
@@ -176,7 +177,7 @@
     font-size: 15px;
     width: 100%;
 
-    &:hover, &:focus { background: var(--sunk); }
+    &:hover { background: var(--sunk); }
     svg { color: var(--text-faint); flex: 0 0 auto; }
     span { flex: 1; }
 

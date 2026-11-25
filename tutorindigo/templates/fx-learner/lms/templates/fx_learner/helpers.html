@@ -230,26 +230,113 @@ def mode_label(mode):
     }.get(mode, '')
 
 
-def duration_bucket(hours):
+def duration_code(hours):
+    """The duration filter code of a program: le3, 4to5, ge6, or '' when the hours are unknown."""
     try:
         value = float(hours)
     except (TypeError, ValueError):
         return ''
-    if value <= 0:
+    if not value > 0:
         return ''
     if value <= 3:
-        return L('3 ساعات أو أقل', '3 hours or less')
+        return 'le3'
     if value <= 5:
-        return L('4 – 5 ساعات', '4 – 5 hours')
-    return L('6 ساعات فأكثر', '6 hours or more')
+        return '4to5'
+    return 'ge6'
+
+
+def duration_label(code):
+    return {
+        'le3': L('3 ساعات أو أقل', '3 hours or less'),
+        '4to5': L('4 – 5 ساعات', '4 – 5 hours'),
+        'ge6': L('6 ساعات فأكثر', '6 hours or more'),
+    }.get(code, '')
+
+
+def duration_bucket(hours):
+    return duration_label(duration_code(hours))
+
+
+def certificate_code(has_certificate):
+    if has_certificate is True:
+        return 'yes'
+    if has_certificate is False:
+        return 'no'
+    return ''
 
 
 def certificate_label(has_certificate):
-    if has_certificate is True:
-        return L('بشهادة', 'With certificate')
-    if has_certificate is False:
-        return L('بدون شهادة', 'No certificate')
-    return ''
+    return {
+        'yes': L('بشهادة', 'With certificate'),
+        'no': L('بدون شهادة', 'No certificate'),
+    }.get(certificate_code(has_certificate), '')
+
+
+def status_label(status):
+    """The registration status as a filter option: no date in it, so every upcoming program shares one option."""
+    return {
+        'open': L('التسجيل مفتوح', 'Registration open'),
+        'upcoming': L('يبدأ قريبًا', 'Starting soon'),
+        'full': L('اكتمل العدد', 'Fully booked'),
+        'closed': L('التسجيل مغلق', 'Registration closed'),
+    }.get(status, '')
+
+
+# ---------------------------------------------------------------- catalogue filters
+
+# The five catalogue filters, in display order: (id, option codes in display order).
+FACETS = (
+    ('mode', ('self_paced', 'instructor_led', 'blended')),
+    ('level', ('basic', 'intermediate', 'advanced')),
+    ('dur', ('le3', '4to5', 'ge6')),
+    ('cert', ('yes', 'no')),
+    ('status', ('open', 'upcoming', 'full', 'closed')),
+)
+
+
+def facet_codes(program):
+    """A program's value for each catalogue filter, as language-neutral codes ('' = unknown). The cards carry
+    these as data-* attributes and the filter options carry the same codes, so matching never depends on a label."""
+    raw = {
+        'mode': program.get('learning_mode'),
+        'level': program.get('level'),
+        'dur': duration_code(program.get('effort_hours')),
+        'cert': certificate_code(program.get('has_certificate')),
+        'status': program.get('status'),
+    }
+    return {facet_id: raw[facet_id] if raw[facet_id] in codes else '' for facet_id, codes in FACETS}
+
+
+def catalog_facets(programs):
+    """The catalogue filter bar: always the five filters, each with the options its programs actually have
+    (fixed order). A filter with no option at all is still listed; the page renders it disabled."""
+    names = {
+        'mode': L('نمط التعلّم', 'Learning mode'),
+        'level': L('المستوى', 'Level'),
+        'dur': L('المدة', 'Duration'),
+        'cert': L('الشهادة', 'Certificate'),
+        'status': L('حالة التسجيل', 'Registration status'),
+    }
+    labels = {
+        'mode': mode_label,
+        'level': level_label,
+        'dur': duration_label,
+        'cert': lambda code: certificate_label(code == 'yes'),
+        'status': status_label,
+    }
+    present = {facet_id: set() for facet_id, _ in FACETS}
+    for item in programs or []:
+        for facet_id, code in facet_codes(item).items():
+            if code:
+                present[facet_id].add(code)
+    return [
+        {
+            'id': facet_id,
+            'name': names[facet_id],
+            'options': [{'value': code, 'label': labels[facet_id](code)} for code in codes if code in present[facet_id]],
+        }
+        for facet_id, codes in FACETS
+    ]
 
 
 def currency_label(currency):
@@ -674,4 +761,34 @@ def learner_urls():
     except Exception:
         logout_url = '/logout'
     return {'my': my_url, 'certificates': certificates_url, 'profile': profile_url, 'logout': logout_url}
+
+
+def _site_host(netloc):
+    host = (netloc or '').rsplit('@', 1)[-1].strip().lower()
+    for port in (':80', ':443'):
+        if host.endswith(port):
+            host = host[:-len(port)]
+    return host
+
+
+def learner_home_redirect(current_path='', current_host=''):
+    """Where the legacy /dashboard sends a learner under fx-learner: the tenant's learner home. When that is
+    not set, is not a link safe_url allows as a page (site path or http(s) URL), or is the page being rendered
+    (a site path, or a URL on current_host, that is this /dashboard: it would loop), the catalogue."""
+    home = safe_url(getattr(settings, 'LEARNER_HOME_MICROFRONTEND_URL', None))
+    try:
+        parsed = urlparse(home)
+    except ValueError:
+        return '/courses'
+    if not home.startswith('/') and not (parsed.scheme.lower() in ('http', 'https') and parsed.netloc):
+        return '/courses'
+    try:
+        dashboard = reverse('dashboard')
+    except Exception:
+        dashboard = '/dashboard'
+    if not parsed.netloc or (current_host and _site_host(parsed.netloc) == _site_host(current_host)):
+        for own in (dashboard, current_path or ''):
+            if own and parsed.path.rstrip('/') == own.rstrip('/'):
+                return '/courses'
+    return home
 %>

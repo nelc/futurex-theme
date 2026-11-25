@@ -1,7 +1,9 @@
 ## fx-learner catalogue (brief 4.2): title band + breadcrumb, underline category tabs, type-to-filter search,
-## facet dropdowns (learning mode, level, duration, certificate, registration status), result count, 3-col grid.
+## the filter bar (learning mode, level, duration, certificate, registration status), result count, 3-col grid.
 ## Programs are rendered server-side (learner_theme helper, or the view's course list on older plugins) and
-## filtered client-side; a facet with fewer than two distinct values is not shown.
+## filtered client-side. The filter bar is always there with all five filters: each lists "All" plus the values
+## its programs have, and a filter no program has a value for is shown disabled. Cards and options match on
+## language-neutral codes (helpers.html facet_codes / catalog_facets). Tabs: every category the backend returns.
 <%page expression_filter="h"/>
 <%inherit file="../main.html" />
 <%namespace name='static' file='../static_content.html'/>
@@ -14,30 +16,8 @@ import json
 <%
 L = fxl.attr.L
 programs, tabs = fxl.attr.catalog_view(request, courses)
-used_categories = {c for p in programs for c in p.get('category_ids', [])}
-tabs = [tab for tab in tabs if tab['id'] in used_categories]
 categories = {tab['id']: tab['name'] for tab in tabs}
-
-level_order = [L('أساسي', 'Basic'), L('متوسط', 'Intermediate'), L('متقدم', 'Advanced')]
-duration_order = [L('3 ساعات أو أقل', '3 hours or less'), L('4 – 5 ساعات', '4 – 5 hours'), L('6 ساعات فأكثر', '6 hours or more')]
-facet_specs = [
-    ('mode', L('نمط التعلّم', 'Learning mode'), lambda p: fxl.attr.mode_label(p.get('learning_mode')), None),
-    ('level', L('المستوى', 'Level'), lambda p: fxl.attr.level_label(p.get('level')), level_order),
-    ('dur', L('المدة', 'Duration'), lambda p: fxl.attr.duration_bucket(p.get('effort_hours')), duration_order),
-    ('cert', L('الشهادة', 'Certificate'), lambda p: fxl.attr.certificate_label(p.get('has_certificate')), [L('بشهادة', 'With certificate'), L('بدون شهادة', 'No certificate')]),
-    ('status', L('حالة التسجيل', 'Registration status'), lambda p: fxl.attr.status_info(p)[0], None),
-]
-facets = []
-for facet_id, facet_name, getter, order in facet_specs:
-    values = []
-    for p in programs:
-        value = getter(p)
-        if value and value not in values:
-            values.append(value)
-    if order:
-        values.sort(key=lambda v: order.index(v) if v in order else len(order))
-    if len(values) >= 2:
-        facets.append({'id': facet_id, 'name': facet_name, 'values': values})
+facets = fxl.attr.catalog_facets(programs)
 
 count_words = {
     'ar': {'0': 'لا توجد برامج', '1': 'برنامج واحد', '2': 'برنامجان', 'few': '{n} برامج', 'many': '{n} برنامجًا'},
@@ -66,24 +46,23 @@ count_words = {
       </label>
     </div>
 
-    % if facets:
-    <div class="fxl-fbar">
+    <div class="fxl-fbar" role="group" aria-label="${L('تصفية البرامج', 'Filter programs')}">
       <span class="fbar-l">${L('تصفية', 'Filter')}</span>
       % for facet in facets:
       <div class="fxl-fdd" data-fxl-facet="${facet['id']}">
-        <button type="button" class="fxl-fbtn" aria-haspopup="true" aria-expanded="false">
+        <button type="button" class="fxl-fbtn" aria-haspopup="true" aria-expanded="false"${' disabled' if not facet['options'] else ''}>
           <span class="v">${facet['name']}</span><em class="fc" hidden></em>${ui.icon('chev', 16)}
         </button>
         <div class="fxl-fpop" role="group" aria-label="${facet['name']}" hidden>
-          % for value in facet['values']:
-          <label class="fopt"><input type="checkbox" value="${value}"/><span>${value}</span><em>0</em></label>
+          <label class="fopt"><input type="checkbox" value="" data-fxl-all checked/><span>${L('الكل', 'All')}</span><em>${len(programs)}</em></label>
+          % for option in facet['options']:
+          <label class="fopt"><input type="checkbox" value="${option['value']}"/><span>${option['label']}</span><em>0</em></label>
           % endfor
         </div>
       </div>
       % endfor
       <button type="button" class="fxl-lnk" data-fxl-clear hidden>${L('مسح الكل', 'Clear all')}</button>
     </div>
-    % endif
 
     <div class="fxl-resbar"><div class="cnt" aria-live="polite" data-fxl-count>${fxl.attr.programs_text(len(programs))}</div></div>
 
@@ -96,6 +75,7 @@ count_words = {
       </div>
       <div class="fxl-empty" data-fxl-empty hidden>
         ${L('لا توجد برامج تطابق بحثك أو الفلاتر المختارة. جرّب كلمة أخرى أو امسح الفلاتر.', 'No programs match your search or filters. Try another word or clear the filters.')}
+        <div data-fxl-empty-clear hidden><button type="button" class="fxl-btn-ghost">${L('مسح الفلاتر', 'Clear filters')}</button></div>
       </div>
       % else:
       <div class="fxl-empty">${L('لا توجد برامج متاحة حاليًا.', 'There are no programs available right now.')}</div>
@@ -116,6 +96,7 @@ count_words = {
   var count = root.querySelector('[data-fxl-count]');
   var empty = root.querySelector('[data-fxl-empty]');
   var clear = root.querySelector('[data-fxl-clear]');
+  var emptyClear = root.querySelector('[data-fxl-empty-clear]');
   var state = { tab: 'all', q: '', f: {} };
 
   function countText(n) {
@@ -151,10 +132,14 @@ count_words = {
       active += selected.length;
       var pool = cards.filter(function (card) { return baseMatch(card) && facetMatch(card, id); });
       [].slice.call(facet.querySelectorAll('.fopt')).forEach(function (option) {
-        var value = option.querySelector('input').value;
-        var n = pool.filter(function (card) { return card.getAttribute('data-' + id) === value; }).length;
+        var input = option.querySelector('input');
+        var value = input.value;
+        var all = input.hasAttribute('data-fxl-all');
+        // "All" counts every program the other filters leave; it is the checked row while nothing is picked.
+        var n = all ? pool.length : pool.filter(function (card) { return card.getAttribute('data-' + id) === value; }).length;
+        input.checked = all ? !selected.length : selected.indexOf(value) !== -1;
         option.querySelector('em').textContent = n;
-        option.classList.toggle('zero', !n && selected.indexOf(value) === -1);
+        option.classList.toggle('zero', !n && !input.checked);
       });
       var badge = facet.querySelector('.fc');
       badge.hidden = !selected.length;
@@ -162,6 +147,12 @@ count_words = {
       facet.querySelector('.fxl-fbtn').classList.toggle('on', selected.length > 0);
     });
     if (clear) { clear.hidden = !active; }
+    if (emptyClear) { emptyClear.hidden = !active && !state.q; }
+  }
+  function clearAll(withSearch) {
+    Object.keys(state.f).forEach(function (id) { state.f[id] = []; });
+    if (withSearch && search) { search.value = ''; state.q = ''; }
+    render();
   }
   function closeAll(except) {
     facets.forEach(function (facet) {
@@ -170,6 +161,24 @@ count_words = {
       facet.querySelector('.fxl-fbtn').setAttribute('aria-expanded', 'false');
     });
   }
+  function place(pop) {
+    // keep an open popover inside the viewport: flip it to the button's inline-end edge when it would overflow
+    var edge = 8;
+    function fits() {
+      var rect = pop.getBoundingClientRect();
+      return rect.left >= edge && rect.right <= document.documentElement.clientWidth - edge;
+    }
+    pop.classList.remove('is-end');
+    if (fits()) { return; }
+    pop.classList.add('is-end');
+    if (!fits()) { pop.classList.remove('is-end'); }
+  }
+  window.addEventListener('resize', function () {
+    facets.forEach(function (facet) {
+      var pop = facet.querySelector('.fxl-fpop');
+      if (!pop.hidden) { place(pop); }
+    });
+  });
   tabs.forEach(function (tab) {
     tab.addEventListener('click', function () {
       state.tab = tab.getAttribute('data-fxl-tab');
@@ -189,18 +198,23 @@ count_words = {
     var pop = facet.querySelector('.fxl-fpop');
     state.f[id] = [];
     button.addEventListener('click', function () {
+      if (button.disabled) { return; }
       var open = pop.hidden;
       closeAll(facet);
       pop.hidden = !open;
       button.setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) { var first = pop.querySelector('input'); if (first) { first.focus(); } }
+      if (open) { place(pop); var first = pop.querySelector('input'); if (first) { first.focus(); } }
     });
     pop.addEventListener('change', function (event) {
       var input = event.target;
       var selected = state.f[id];
-      var at = selected.indexOf(input.value);
-      if (input.checked && at === -1) { selected.push(input.value); }
-      if (!input.checked && at !== -1) { selected.splice(at, 1); }
+      if (input.hasAttribute('data-fxl-all')) {
+        selected.length = 0; // "All" clears this filter; render() keeps it checked while nothing is picked
+      } else {
+        var at = selected.indexOf(input.value);
+        if (input.checked && at === -1) { selected.push(input.value); }
+        if (!input.checked && at !== -1) { selected.splice(at, 1); }
+      }
       render();
     });
     facet.addEventListener('keydown', function (event) {
@@ -210,13 +224,8 @@ count_words = {
   document.addEventListener('mousedown', function (event) {
     if (!event.target.closest || !event.target.closest('.fxl-fdd')) { closeAll(null); }
   });
-  if (clear) {
-    clear.addEventListener('click', function () {
-      Object.keys(state.f).forEach(function (id) { state.f[id] = []; });
-      [].slice.call(root.querySelectorAll('.fxl-fpop input')).forEach(function (input) { input.checked = false; });
-      render();
-    });
-  }
+  if (clear) { clear.addEventListener('click', function () { clearAll(false); }); }
+  if (emptyClear) { emptyClear.querySelector('button').addEventListener('click', function () { clearAll(true); }); }
   var wanted = new URL(window.location.href).searchParams.get('tab');
   var wantedTab = tabs.filter(function (t) { return t.getAttribute('data-fxl-tab') === wanted; })[0];
   if (wantedTab) { wantedTab.click(); } else { render(); }

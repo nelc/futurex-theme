@@ -77,16 +77,26 @@ SOCIAL = {
 </div>
 </%def>
 
-## Default cover: the entity colour with the program name, never a broken image or alt text.
+## Default cover: the entity colour with the program name, never a broken image or alt text. A second, distinct
+## candidate (image_fallback_url) is tried once when the first fails to load, before the default cover shows.
 <%def name="cover(program)">
+<%
+fallback_url = program.get('image_fallback_url')
+has_fallback = isinstance(fallback_url, str) and bool(fallback_url) and fallback_url != program.get('image_url')
+%>
 % if program.get('image_url'):
-<img src="${program['image_url']}" alt="" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false;"/><span class="fxl-cv-def" hidden><i>${program['title']}</i></span>
+<img src="${program['image_url']}"
+% if has_fallback:
+  data-fallback="${fallback_url}"
+% endif
+  alt="" loading="lazy" onerror="var f=this.getAttribute('data-fallback');if(f){this.removeAttribute('data-fallback');this.src=f;return;}this.hidden=true;this.nextElementSibling.hidden=false;"/><span class="fxl-cv-def" hidden><i>${program['title']}</i></span>
 % else:
 <span class="fxl-cv-def"><i>${program['title']}</i></span>
 % endif
 </%def>
 
-## Program card (brief 4.8). categories: {category_id: name}. data-* attributes feed the catalogue filters.
+## Program card (brief 4.8). categories: {category_id: name}. data-* attributes feed the catalogue filters
+## (language-neutral codes from facet_codes(), the same codes the filter options carry).
 <%def name="card(program, categories=None)">
 <%
 status_text, status_class = fxl.attr.status_info(program)
@@ -95,15 +105,16 @@ hours = fxl.attr.hours_text(program.get('effort_hours'))
 category_names = [(categories or {}).get(c) for c in program.get('category_ids', [])]
 category_names = [c for c in category_names if c]
 muted = program.get('status') in ('closed', 'full')
+codes = fxl.attr.facet_codes(program)
 %>
 <a class="fxl-card${' is-muted' if muted else ''}" href="${program['about_url']}"
    data-title="${program['title'].lower()}"
    data-cats="${' '.join(program.get('category_ids', []))}"
-   data-mode="${mode}"
-   data-level="${fxl.attr.level_label(program.get('level'))}"
-   data-dur="${fxl.attr.duration_bucket(program.get('effort_hours'))}"
-   data-cert="${fxl.attr.certificate_label(program.get('has_certificate'))}"
-   data-status="${status_text}">
+   data-mode="${codes['mode']}"
+   data-level="${codes['level']}"
+   data-dur="${codes['dur']}"
+   data-cert="${codes['cert']}"
+   data-status="${codes['status']}">
   <div class="fxl-cover">${cover(program)}</div>
   <div class="fxl-card-body">
     % if mode or category_names:

@@ -1,12 +1,31 @@
-// Home (brief 4.1): hero carousel + featured programs
+// Home (brief 4.1): hero band + featured programs.
+// The band of the prototype (.band): hero surface, bottom border, a soft brand-colour glow with a faint grid
+// on the inline-end side, then tag pill, title, one paragraph and the buttons in a single column. The tenant's
+// hero sections rotate inside it. A slide has an image only when the tenant configured one (.has-art).
 .fxl-hero {
   position: relative;
-  background: var(--hero-bg);
-  border-bottom: 1px solid var(--line-soft);
   overflow: hidden;
+  background: var(--hero-bg);
+  color: var(--text);
+  border-bottom: 1px solid var(--line-soft);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: unquote("min(42%, 520px)"); // unquote: libsass would evaluate min() itself and reject the mixed units
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 60% 45%, color-mix(in srgb, var(--brand) 18%, transparent) 0, transparent 55%),
+      linear-gradient(90deg, transparent 0 calc(100% - 1px), color-mix(in srgb, var(--brand) 14%, transparent) 0) 0 0 / 44px 44px,
+      linear-gradient(0deg, transparent 0 calc(100% - 1px), color-mix(in srgb, var(--brand) 14%, transparent) 0) 0 0 / 44px 44px;
+    -webkit-mask-image: radial-gradient(circle at 60% 50%, #000 0, transparent 70%);
+    mask-image: radial-gradient(circle at 60% 50%, #000 0, transparent 70%);
+  }
 }
 
-.fxl-hero-track { display: grid; }
+.fxl-hero-track { display: grid; position: relative; z-index: 1; }
 
 .fxl-slide {
   grid-area: 1 / 1;
@@ -17,28 +36,62 @@
   &.is-on { opacity: 1; visibility: visible; transition: opacity .5s ease, visibility 0s; }
 
   .txt { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
-  .h1 { margin: 0; max-width: 680px; font-size: clamp(28px, 4.2vw, 48px); font-weight: 600; line-height: 1.25; color: var(--text); }
-  p { margin: 14px 0 0; max-width: 600px; color: var(--text-muted); font-size: clamp(16px, 1.5vw, 19px); line-height: 1.65; }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 8px;
+    border-radius: var(--r-sm);
+    margin-bottom: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--n800);
+  }
+
+  .h1 { margin: 0; max-width: 760px; font-size: clamp(30px, 4.6vw, 52px); font-weight: 600; line-height: 1.25; letter-spacing: -.01em; color: var(--text); }
+  p { margin: 16px 0 0; max-width: 640px; color: var(--text-muted); font-size: clamp(16px, 1.6vw, 20px); line-height: 1.6; }
   .meta { margin-top: 12px; color: var(--text); font-size: 15px; font-weight: 500; line-height: 1.5; }
-  .acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
-  .art { position: relative; aspect-ratio: 16 / 10; max-width: 100%; border-radius: var(--r-lg); overflow: hidden; }
+  .acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+
+  .art {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    max-width: 100%;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--sunk);
+
+    img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  }
 }
 
 .fxl-slide-in {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
-  align-items: center;
-  gap: 40px;
-  padding-block: 52px 24px;
-  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-block: 56px 28px;
+
+  // only a slide with a tenant image is laid out in two columns
+  &.has-art {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+    align-items: center;
+    gap: 40px;
+  }
 }
+
+.fxl-hero.is-single .fxl-slide-in { padding-block: 56px 60px; } // no controls row under a single slide
 
 .fxl-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 18px;
+  min-height: 40px;
+  padding: 0 16px;
   border-radius: var(--r-sm);
   background: var(--brand);
   color: var(--on-brand) !important;
@@ -46,8 +99,9 @@
   font-size: 16px;
   font-weight: 500;
   text-decoration: none !important;
+  transition: background-color .15s, border-color .15s;
 
-  &:hover, &:focus { background: var(--brand-hover); border-color: var(--brand-hover); }
+  &:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
 }
 
 .fxl-cta-line {
@@ -55,42 +109,16 @@
   color: var(--text) !important;
   border-color: var(--line);
 
-  &:hover, &:focus { background: var(--sunk); border-color: var(--line); }
-}
-
-.fxl-slide .art-img {
-  border: 1px solid var(--line);
-  background: var(--sunk);
-
-  img { width: 100%; height: 100%; object-fit: cover; display: block; }
-}
-
-.fxl-slide .art-pattern {
-  background:
-    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--brand) 22%, transparent) 0, transparent 60%),
-    linear-gradient(90deg, transparent 0 calc(100% - 1px), color-mix(in srgb, var(--brand) 16%, transparent) 0) 0 0 / 40px 40px,
-    linear-gradient(0deg, transparent 0 calc(100% - 1px), color-mix(in srgb, var(--brand) 16%, transparent) 0) 0 0 / 40px 40px;
-  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0, transparent 72%);
-  mask-image: radial-gradient(circle at 50% 50%, #000 0, transparent 72%);
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 30% 30%;
-    border-radius: 24px;
-    background: linear-gradient(135deg, var(--brand), var(--brand-deep));
-    opacity: .9;
-    transform: rotate(-8deg);
-  }
-
-  &.alt::after { inset: 28% 34%; border-radius: 50%; transform: none; }
+  &:hover { background: var(--sunk); border-color: var(--line); }
 }
 
 .fxl-hero-ctrl {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-block: 0 24px;
+  padding-block: 0 32px;
 
   .hc-btn {
     width: 36px;
@@ -104,9 +132,8 @@
     background: var(--surface);
     color: var(--text);
     cursor: pointer;
-    box-shadow: none;
 
-    &:hover { background: var(--sunk); }
+    &:hover:not(:disabled) { background: var(--sunk); color: var(--text); }
   }
 
   .dots { display: flex; align-items: center; gap: 6px; padding-inline: 4px; }
@@ -121,22 +148,27 @@
     cursor: pointer;
     transition: width .25s, background-color .25s;
     position: relative;
-    box-shadow: none;
 
     &::after { content: ""; position: absolute; inset: -10px -4px; }
-    &[aria-current="true"] { width: 28px; background: var(--brand); }
+    &:hover:not(:disabled) { background: var(--n300); } // the prototype's dots have no hover state
+    &[aria-current="true"], &[aria-current="true"]:hover:not(:disabled) { width: 28px; background: var(--brand); }
   }
 }
 
 @media (max-width: $fxl-bp-medium) {
-  .fxl-slide-in { grid-template-columns: 1fr; gap: 24px; padding-block: 32px 20px; min-height: 0; }
+  .fxl-slide-in.has-art { grid-template-columns: 1fr; gap: 24px; }
   .fxl-slide .art { order: -1; aspect-ratio: 16 / 7; }
-  .fxl-slide .art-pattern { display: none; }
-  .fxl-hero-ctrl { padding-bottom: 20px; }
+}
+
+@media (max-width: $fxl-bp-small) {
+  .fxl-hero::after { opacity: .5; width: 70%; }
+  .fxl-slide-in { padding-block: 36px 20px; }
+  .fxl-hero.is-single .fxl-slide-in { padding-block: 36px 40px; }
+  .fxl-hero-ctrl { padding-bottom: 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fxl-slide, .fxl-slide.is-on, .fxl-hero-ctrl .dot { transition: none; }
+  .fxl-slide, .fxl-slide.is-on, .fxl-hero-ctrl .dot, .fxl-cta { transition: none; }
 }
 
 .fxl-sechead {
