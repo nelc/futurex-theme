@@ -493,7 +493,7 @@ def has_helpers():
 
 # A link saved without a scheme that is plainly a host: dotted name, optional port, optional path/query/fragment.
 _SCHEMELESS_HOST = re.compile(
-    r'^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+(?::\d{1,5})?(?:[/?#].*)?$'
+    r'^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+(?::[0-9]{1,5})?(?:[/?#].*)?$'
 )
 
 
@@ -510,7 +510,11 @@ def safe_url(url):
         return url
     if _SCHEMELESS_HOST.match(url) and not any(char.isspace() for char in url):
         return 'https://' + url
-    return url if urlparse(url).scheme.lower() in ('http', 'https', 'mailto', 'tel') else ''
+    try:
+        scheme = urlparse(url).scheme.lower()
+    except ValueError:
+        return ''
+    return url if scheme in ('http', 'https', 'mailto', 'tel') else ''
 
 
 def safe_links(links, key='link'):
