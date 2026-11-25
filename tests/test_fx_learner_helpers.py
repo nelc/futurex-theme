@@ -5,6 +5,7 @@ template module. Mako plus minimal stubs for the platform imports; no Open edX n
 Run:  python -m unittest discover -s tests -v      (needs `pip install mako`)
 """
 
+import re
 import sys
 import types
 import unittest
@@ -540,6 +541,50 @@ class BrandColorsTest(HelpersTestCase):
             with self.subTest(answer=answer):
                 plugin = types.SimpleNamespace(get_effective_brand_color=lambda visual_identity, answer=answer: answer)
                 self.assertEqual(self.load(plugin).brand_colors(identity(primary_color="#AA0011"))["brand"], "#AA0011")
+
+
+class BrandLinkWeightTest(unittest.TestCase):
+    """The run-time link colour must out-rank the platform's compiled green in every link state.
+
+    The platform (lms/static/sass/base/_base.scss) colours links with four selectors, each again under
+    :hover/:focus. fx-learner's rule comes later in the same stylesheet, so it wins a state only when it carries
+    a selector of at least that state's weight.
+    """
+
+    PLATFORM = ("a:not(.btn)", "a:visited:not(.btn)", "p a:not(.btn)", "p a:visited:not(.btn)")
+    SASS = HERE.parent / "tutorindigo" / "templates" / "fx-learner" / "lms" / "static" / "sass" / "fxl" / "_base.scss"
+
+    @staticmethod
+    def weight(selector):
+        """(classes, types) of a simple selector list; :where() counts for nothing, :not() for its argument."""
+        selector = re.sub(r":where\([^)]*\)", "", selector)
+        selector = re.sub(r":not\(([^)]*)\)", r"\1", selector)
+        classes = len(re.findall(r"\.[\w-]+|\[[^\]]*\]|:[\w-]+", selector))
+        types = len(re.findall(r"(?:^|\s)[a-z]+", selector))
+        return classes, types
+
+    def link_selectors(self):
+        rule = re.search(r"((?:^:where\(\.fxl-main\)[^{]*)+)\{\s*color: var\(--brand\);", self.SASS.read_text(), re.M)
+        self.assertIsNotNone(rule, "the fx-learner link colour rule is gone")
+        return [selector.strip() for selector in rule.group(1).split(",")]
+
+    def test_weight_reading(self):
+        self.assertEqual(self.weight("p a:visited:not(.btn):hover"), (3, 2))
+        self.assertEqual(self.weight(":where(.fxl-main) a:not([class])"), (1, 1))
+
+    def test_every_platform_link_state_is_matched_weight_for_weight(self):
+        ours = self.link_selectors()
+        for state in ("", ":hover"):
+            for selector in self.PLATFORM:
+                with self.subTest(selector=selector + state):
+                    self.assertIn(self.weight(selector + state), [self.weight(ours_ + state) for ours_ in ours])
+
+    def test_the_rule_stays_at_the_platforms_weight(self):
+        # Never heavier than the platform's own selectors: a more specific fx-learner rule must still win.
+        heaviest = max(self.weight(selector) for selector in self.PLATFORM)
+        for selector in self.link_selectors():
+            self.assertLessEqual(self.weight(selector), heaviest)
+            self.assertTrue(selector.startswith(":where(.fxl-main) "))
 
 
 class CourseHomeTest(HelpersTestCase):

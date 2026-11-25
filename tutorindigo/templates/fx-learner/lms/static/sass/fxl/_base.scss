@@ -72,7 +72,12 @@ body {
   &:hover, &:focus { background-color: var(--brand-hover); border-color: var(--brand-hover); }
 }
 
-:where(.fxl-main) a:not([class]) {
+// The link selectors mirror the platform's own four (base/_base.scss: `a:not(.btn)`, its :visited form, and both
+// again under `p`), weight for weight, so a later rule of equal weight replaces the compiled green in every state.
+:where(.fxl-main) a:not([class]),
+:where(.fxl-main) a:not([class]):visited,
+:where(.fxl-main) p a:not([class]),
+:where(.fxl-main) p a:not([class]):visited {
   color: var(--brand);
 
   &:hover, &:focus { color: var(--brand-hover); }
