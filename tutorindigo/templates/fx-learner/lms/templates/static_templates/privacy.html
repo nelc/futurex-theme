@@ -1,0 +1,18 @@
+## fx-learner privacy page (brief 4.9: restyle only): title band + breadcrumb, then indigo's section engine.
+<%inherit file="../main.html" />
+<%namespace name='fx_static' file='../fx_templates/fx_static_content.html'/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%namespace name='ui' file='/fx_learner/ui.html'/>
+<%
+allowed_sections = fx_static.get_all_fx_section_names()
+allowed_sections.remove('featured_courses_v1')
+
+page_title = fxl.attr.L('سياسة الخصوصية', 'Privacy policy')
+%>
+<%def name="pagetitle()">${fxl.attr.L('سياسة الخصوصية', 'Privacy policy')}</%def>
+<main id="main" class="fxl-main" tabindex="-1">
+  ${ui.pagehead(page_title, [(fxl.attr.L('الرئيسية', 'Home'), '/'), (page_title, None)])}
+  <div class="fxl-wrap fxl-static fxl-static-privacy">
+    <%include file="../fx_templates/fx_page/page.html" args="page_name='pages_privacy', allowed_sections=allowed_sections"/>
+  </div>
+</main>

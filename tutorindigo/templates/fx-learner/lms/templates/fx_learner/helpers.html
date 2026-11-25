@@ -1,0 +1,561 @@
+## fx-learner shared helpers. Used as a namespace: <%namespace name='fxl' file='/fx_learner/helpers.html'/>
+## and called through fxl.attr.<function>(...). Plain module-level Python so values (lists, dicts) can be returned.
+## Every data source is read defensively: a missing helper module, a missing config key or a malformed value
+## degrades to an empty/neutral rendering, never to a 500.
+<%!
+import logging
+import re
+from datetime import date, datetime
+from urllib.parse import urlparse
+
+from django.conf import settings
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.translation import get_language
+
+log = logging.getLogger(__name__)
+
+try:
+    from futurex_openedx_extensions.helpers.tenants import get_config_current_request
+except Exception:  # pragma: no cover - plugin always present in FutureX images
+    get_config_current_request = None
+
+try:
+    # Package A of the learner-theme plan. Older plugin versions do not ship it: fall back to the
+    # data the LMS view already put in the template context.
+    from futurex_openedx_extensions.helpers import learner_theme as _learner_theme
+except Exception:
+    _learner_theme = None
+
+
+# ---------------------------------------------------------------- language
+
+def lang():
+    return (get_language() or 'en')[:2]
+
+
+def is_ar():
+    return lang() == 'ar'
+
+
+def L(ar, en):
+    """One UI string in two languages (fx-learner ships ar + en; any other language gets English)."""
+    return ar if is_ar() else en
+
+
+def tr(value):
+    """A tenant-config {ar, en, ...} dict in the current language, falling back to en, then ar."""
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, dict):
+        return ''
+    for code in (lang(), 'en', 'ar'):
+        text = value.get(code)
+        if isinstance(text, str) and text.strip():
+            return text
+    return ''
+
+
+# ---------------------------------------------------------------- config
+
+def cfg(key, default=None):
+    if get_config_current_request is None:
+        return default
+    try:
+        found = get_config_current_request([key])
+    except Exception:
+        log.exception('fx-learner: reading tenant config key %s failed', key)
+        return default
+    if not found:
+        return default
+    value = (found.get('values') or {}).get(key)
+    return default if value is None else value
+
+
+def page_sections(page_key, section_type=None):
+    """Visible sections of a theme_v2 page, optionally of one type, in saved order."""
+    page = cfg(page_key, {})
+    sections = page.get('sections') if isinstance(page, dict) else None
+    result = []
+    for section in sections if isinstance(sections, list) else []:
+        if not isinstance(section, dict) or section.get('visible') is not True:
+            continue
+        if section_type and section.get('type') != section_type:
+            continue
+        result.append(section)
+    return result
+
+
+def entity(platform_name=''):
+    ident = cfg('entity_identity', {})
+    if not isinstance(ident, dict):
+        ident = {}
+    logo = cfg('logo_image_url', '')
+    return {
+        'short_name': tr(ident.get('short_name')) or platform_name,
+        'parent_org': tr(ident.get('parent_org')),
+        'site_label': tr(ident.get('site_label')),
+        'site_url': ident.get('site_url') if isinstance(ident.get('site_url'), str) else '',
+        'help_link': ident.get('help_link') if isinstance(ident.get('help_link'), dict) else {},
+        'logo_url': logo if isinstance(logo, str) else '',
+    }
+
+
+def home_tabs():
+    """Catalogue categories = the tabs of the first featured_courses_v1 section of the home page."""
+    featured = page_sections('pages_home', 'featured_courses_v1')
+    tabs = featured[0].get('tabs') if featured else None
+    result = []
+    if not isinstance(tabs, dict) or tabs.get('enabled') is not True:
+        return result
+    seen = {'all'}
+    for item in tabs.get('items') if isinstance(tabs.get('items'), list) else []:
+        if not isinstance(item, dict) or item.get('enabled') is not True:
+            continue
+        tab_id = item.get('id')
+        name = tr(item.get('name'))
+        if not isinstance(tab_id, str) or not tab_id or tab_id in seen or not name:
+            continue
+        seen.add(tab_id)
+        ids = item.get('course_ids') if isinstance(item.get('course_ids'), list) else []
+        result.append({'id': tab_id, 'name': name, 'course_ids': [i for i in ids if isinstance(i, str)]})
+    return result
+
+
+# ---------------------------------------------------------------- formatting (Western digits everywhere)
+
+MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+             'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+
+def num(value):
+    if isinstance(value, float) and not value.is_integer():
+        return f'{value:.1f}'
+    try:
+        return str(int(value))
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def hours_text(hours):
+    if hours in (None, ''):
+        return ''
+    try:
+        value = float(hours)
+    except (TypeError, ValueError):
+        return str(hours)
+    if value <= 0:
+        return ''
+    n = num(value)
+    if is_ar():
+        if value == 1:
+            return 'ساعة واحدة'
+        if value == 2:
+            return 'ساعتان'
+        if value.is_integer() and 3 <= value <= 10:
+            return f'{n} ساعات'
+        return f'{n} ساعة'
+    return '1 hour' if value == 1 else f'{n} hours'
+
+
+def programs_text(count):
+    if is_ar():
+        if count == 0:
+            return 'لا توجد برامج'
+        if count == 1:
+            return 'برنامج واحد'
+        if count == 2:
+            return 'برنامجان'
+        if 3 <= count <= 10:
+            return f'{count} برامج'
+        return f'{count} برنامجًا'
+    return '1 program' if count == 1 else f'{count} programs'
+
+
+def parse_date(value):
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str) and value:
+        try:
+            return datetime.fromisoformat(value.replace('Z', '+00:00')).date()
+        except ValueError:
+            return None
+    return None
+
+
+def date_text(value):
+    day = parse_date(value)
+    if not day:
+        return ''
+    month = (MONTHS_AR if is_ar() else MONTHS_EN)[day.month - 1]
+    text = f'{day.day} {month}'
+    if day.year != date.today().year:
+        text += f' {day.year}'
+    return text
+
+
+def status_info(program):
+    status = program.get('status')
+    if status == 'open':
+        return L('التسجيل مفتوح', 'Registration open'), 'ok'
+    if status == 'upcoming':
+        when = date_text(program.get('start_date'))
+        if when:
+            return L(f'يبدأ {when}', f'Starts {when}'), 'soon'
+        return L('يبدأ قريبًا', 'Starting soon'), 'soon'
+    if status == 'full':
+        return L('اكتمل العدد', 'Fully booked'), 'warn'
+    if status == 'closed':
+        return L('التسجيل مغلق', 'Registration closed'), 'off'
+    return '', ''
+
+
+def level_label(level):
+    return {
+        'basic': L('أساسي', 'Basic'),
+        'intermediate': L('متوسط', 'Intermediate'),
+        'advanced': L('متقدم', 'Advanced'),
+    }.get(level, '')
+
+
+def mode_label(mode):
+    return {
+        'self_paced': L('تدريب ذاتي', 'Self-paced'),
+        'instructor_led': L('بإشراف مدرّب', 'Instructor-led'),
+        'blended': L('تدريب مدمج', 'Blended'),
+    }.get(mode, '')
+
+
+def duration_bucket(hours):
+    try:
+        value = float(hours)
+    except (TypeError, ValueError):
+        return ''
+    if value <= 0:
+        return ''
+    if value <= 3:
+        return L('3 ساعات أو أقل', '3 hours or less')
+    if value <= 5:
+        return L('4 – 5 ساعات', '4 – 5 hours')
+    return L('6 ساعات فأكثر', '6 hours or more')
+
+
+def certificate_label(has_certificate):
+    if has_certificate is True:
+        return L('بشهادة', 'With certificate')
+    if has_certificate is False:
+        return L('بدون شهادة', 'No certificate')
+    return ''
+
+
+# ---------------------------------------------------------------- programs
+
+_EFFORT_HHMM = re.compile(r'^\s*(\d{1,3}):(\d{2})')
+_EFFORT_NUM = re.compile(r'^\s*(\d+(?:[.,]\d+)?)')
+
+
+def effort_to_hours(effort):
+    """Studio's free-text Effort as hours: HH:MM or a leading number (same reading as eox-nelp's)."""
+    if not isinstance(effort, str) or not effort.strip():
+        return None
+    match = _EFFORT_HHMM.match(effort)
+    if match:
+        hours = int(match.group(1)) + int(match.group(2)) / 60
+        return round(hours, 1) if hours else None
+    match = _EFFORT_NUM.match(effort)
+    if match:
+        hours = float(match.group(1).replace(',', '.'))
+        return hours or None
+    return None
+
+
+def _image_or_none(url):
+    if not url or not isinstance(url, str):
+        return None
+    default = getattr(settings, 'DEFAULT_COURSE_ABOUT_IMAGE_URL', '') or ''
+    if default and url.endswith(default.split('/')[-1]):
+        return None
+    if 'images_course_image' in url or url.endswith('no_course_image.png'):
+        return None
+    return url
+
+
+def from_course(course, tab_ids_by_course=None):
+    """Fallback program dict built from a CourseOverview when the learner_theme helper is not installed."""
+    course_id = str(course.id)
+    try:
+        enrollment_start = course.enrollment_start
+        if course.is_enrollment_open():
+            status = 'open'
+        elif enrollment_start and enrollment_start > timezone.now():
+            status = 'upcoming'
+        else:
+            status = 'closed'
+    except Exception:
+        enrollment_start, status = None, 'open'
+    start = enrollment_start if status == 'upcoming' else getattr(course, 'start', None)
+    try:
+        about_url = reverse('about_course', args=[course_id])
+    except Exception:
+        about_url = '#'
+    return {
+        'id': course_id,
+        'title': getattr(course, 'display_name_with_default', '') or course_id,
+        'image_url': _image_or_none(getattr(course, 'course_image_url', None)),
+        'about_url': about_url,
+        'effort_hours': effort_to_hours(getattr(course, 'effort', None)),
+        'units': None,
+        'level': None,
+        'learning_mode': None,
+        'has_certificate': None,
+        'category_ids': list((tab_ids_by_course or {}).get(course_id, [])),
+        'status': status,
+        'start_date': start.isoformat() if start else None,
+        'enrolled': False,
+        'price': None,
+        '_fallback': True,
+    }
+
+
+def _tab_ids_by_course(tabs):
+    mapping = {}
+    for tab in tabs:
+        for course_id in tab['course_ids']:
+            mapping.setdefault(course_id, []).append(tab['id'])
+    return mapping
+
+
+def _clean(program):
+    if not isinstance(program, dict) or not program.get('id') or not program.get('title'):
+        return None
+    program = dict(program)
+    program['image_url'] = _image_or_none(program.get('image_url'))
+    if not program.get('about_url'):
+        try:
+            program['about_url'] = reverse('about_course', args=[program['id']])
+        except Exception:
+            program['about_url'] = '#'
+    cats = program.get('category_ids')
+    program['category_ids'] = [str(c) for c in cats] if isinstance(cats, list) else []
+    return program
+
+
+def catalog(request, courses=None, tabs=None):
+    """Programs for the catalogue / home: the plugin helper when present, else the view's own course list."""
+    if _learner_theme is not None and hasattr(_learner_theme, 'get_learner_theme_catalog'):
+        try:
+            programs = _learner_theme.get_learner_theme_catalog(request)
+            return [p for p in (_clean(p) for p in (programs or [])) if p]
+        except Exception:
+            log.exception('fx-learner: get_learner_theme_catalog failed; using the view course list')
+    if tabs is None:
+        tabs = home_tabs()
+    if not courses:
+        courses = _catalog_courses(request)
+    mapping = _tab_ids_by_course(tabs)
+    result = []
+    for course in courses or []:
+        try:
+            result.append(from_course(course, mapping))
+        except Exception:
+            log.exception('fx-learner: could not describe course %s', getattr(course, 'id', '?'))
+    return result
+
+
+def _catalog_courses(request):
+    """The view gave no course list (/courses with course discovery on renders it client-side): read the
+    tenant's catalogue the way the home page does, listed while enrolment is open or the course has not ended."""
+    try:
+        from lms.djangoapps.courseware.courses import get_courses
+        listed = []
+        for course in get_courses(request.user):
+            try:
+                if course.is_enrollment_open() or not course.has_ended():
+                    listed.append(course)
+            except Exception:
+                listed.append(course)
+        return listed
+    except Exception:
+        log.exception('fx-learner: reading the catalogue failed')
+        return []
+
+
+def program(request, course):
+    if _learner_theme is not None and hasattr(_learner_theme, 'get_learner_theme_program'):
+        try:
+            found = _clean(_learner_theme.get_learner_theme_program(request, course.id))
+            if found:
+                return found
+        except Exception:
+            log.exception('fx-learner: get_learner_theme_program failed for %s', course.id)
+    return from_course(course, _tab_ids_by_course(home_tabs()))
+
+
+def has_helpers():
+    return _learner_theme is not None
+
+
+# ---------------------------------------------------------------- home hero slides
+
+def safe_url(url):
+    """A link target the theme may print in an href: site-relative, #anchor, http(s), mailto or tel. Anything else
+    (javascript:, data:, protocol-relative, control characters) becomes ''."""
+    if not isinstance(url, str):
+        return ''
+    url = url.strip()
+    if not url or any(ord(char) < 32 or ord(char) == 127 for char in url) or url.startswith('//'):
+        return ''
+    if url.startswith(('/', '#')):
+        return url
+    return url if urlparse(url).scheme.lower() in ('http', 'https', 'mailto', 'tel') else ''
+
+
+def _hero_program(request, course_id):
+    """The program a hero slide points at, or None (no id, bad id, not this tenant's, helper missing or failing)."""
+    if not isinstance(course_id, str) or not course_id.strip():
+        return None
+    if _learner_theme is None or not hasattr(_learner_theme, 'get_learner_theme_program'):
+        return None
+    try:
+        return _clean(_learner_theme.get_learner_theme_program(request, course_id.strip()))
+    except Exception:
+        log.exception('fx-learner: hero slide program %s could not be read', course_id)
+        return None
+
+
+def program_meta(program):
+    """The one-line summary under a program slide's title: mode, duration, certificate, start date when upcoming."""
+    parts = [
+        mode_label(program.get('learning_mode')),
+        hours_text(program.get('effort_hours')),
+        L('بشهادة', 'With certificate') if program.get('has_certificate') else '',
+    ]
+    if program.get('status') == 'upcoming':
+        parts.append(status_info(program)[0])
+    return ' · '.join(part for part in parts if part)
+
+
+def hero_slide(request, slide, resolve_links):
+    """What one hero_section_v1 slide shows besides its title/text/image.
+
+    resolve_links is the theme's link resolver (fx_static.get_fx_link_sections): it turns {'page', 'custom_url',
+    'new_tab'} entries into entries with a 'link', dropping unknown pages. The result never raises:
+    {'meta': str, 'buttons': [{'label', 'href', 'new_tab', 'kind'}]} with kind 'primary' or 'secondary'.
+    No course_id and no button fields gives today's single "browse programs" button.
+    """
+    program = _hero_program(request, slide.get('course_id'))
+    meta = tr(slide.get('meta')).strip() or (program_meta(program) if program else '')
+
+    defaults = {}
+    if program:
+        defaults = {
+            'primary': {'label': L('عرض البرنامج', 'View program'), 'href': program.get('about_url') or '/courses'},
+            'secondary': {'label': L('كل البرامج التدريبية', 'All training programs'), 'href': '/courses'},
+        }
+
+    configured = []
+    for kind in ('primary', 'secondary'):
+        raw = slide.get(kind + '_button')
+        if isinstance(raw, dict) and isinstance(raw.get('page'), str) and raw['page']:
+            custom_url = raw.get('custom_url')
+            configured.append({
+                'kind': kind,
+                'page': raw['page'],
+                'custom_url': custom_url if isinstance(custom_url, str) else '',
+                'new_tab': raw.get('new_tab') is True,
+                'label': tr(raw.get('label')).strip(),
+            })
+    try:
+        resolved = {item['kind']: item for item in (resolve_links(configured) or [])}
+    except Exception:
+        log.exception('fx-learner: hero slide buttons could not be resolved')
+        resolved = {}
+
+    buttons = []
+    for kind in ('primary', 'secondary'):
+        item = resolved.get(kind)
+        default = defaults.get(kind)
+        href = safe_url(item.get('link')) if item else ''
+        label = (item.get('label') if item else '') or (default['label'] if default else '')
+        if href and label:
+            buttons.append({'kind': kind, 'label': label, 'href': href, 'new_tab': item.get('new_tab') or ''})
+        elif default:
+            buttons.append({'kind': kind, 'label': default['label'], 'href': default['href'], 'new_tab': ''})
+    if not buttons:
+        buttons.append({'kind': 'primary', 'label': L('تصفّح البرامج التدريبية', 'Browse training programs'),
+                        'href': '/courses', 'new_tab': ''})
+    return {'meta': meta, 'buttons': buttons}
+
+
+# ---------------------------------------------------------------- learner
+
+def _mask_email(email):
+    if not email or '@' not in email:
+        return ''
+    local, domain = email.split('@', 1)
+    return (local[:2] + '***@' + domain) if local else ''
+
+
+def menu(request, user):
+    data = None
+    if _learner_theme is not None and hasattr(_learner_theme, 'get_learner_theme_menu'):
+        try:
+            data = _learner_theme.get_learner_theme_menu(request)
+        except Exception:
+            log.exception('fx-learner: get_learner_theme_menu failed')
+    real_user = getattr(user, 'real_user', user)
+    if not isinstance(data, dict):
+        try:
+            full_name = (real_user.profile.name or '').strip()
+        except Exception:
+            full_name = ''
+        if not full_name:
+            full_name = ' '.join(filter(None, [real_user.first_name, real_user.last_name])).strip()
+        data = {
+            'full_name': full_name,
+            'first_name': (real_user.first_name or '').strip() or (full_name.split()[0] if full_name else ''),
+            'masked_email': _mask_email(real_user.email),
+            'programs_count': None,
+            'certificates_count': None,
+            'resume': None,
+        }
+    first_name = (data.get('first_name') or '').strip()
+    full_name = (data.get('full_name') or '').strip() or first_name
+    resume = data.get('resume') if isinstance(data.get('resume'), dict) else None
+    if resume:
+        try:
+            resume['progress_percent'] = max(0, min(100, int(round(float(resume.get('progress_percent') or 0)))))
+        except (TypeError, ValueError):
+            resume['progress_percent'] = 0
+    return {
+        'full_name': full_name,
+        # The username is never shown; a learner without a name gets a neutral label.
+        'first_name': first_name or L('حسابي', 'My account'),
+        'initial': (first_name or full_name or '·')[:1].upper(),
+        'masked_email': data.get('masked_email') or '',
+        'programs_count': data.get('programs_count'),
+        'certificates_count': data.get('certificates_count'),
+        'resume': resume,
+    }
+
+
+def learner_urls():
+    home = getattr(settings, 'LEARNER_HOME_MICROFRONTEND_URL', None) or ''
+    try:
+        dashboard = reverse('dashboard')
+    except Exception:
+        dashboard = '/dashboard'
+    my_url = home or dashboard
+    base = my_url.rstrip('/')
+    # The learner hub serves /learner/my and /learner/certificates side by side (plan, package D).
+    certificates_url = base[:-3] + '/certificates' if base.endswith('/my') else my_url
+    profile_url = getattr(settings, 'ACCOUNT_MICROFRONTEND_URL', None) or '/account/'
+    try:
+        logout_url = reverse('logout')
+    except Exception:
+        logout_url = '/logout'
+    return {'my': my_url, 'certificates': certificates_url, 'profile': profile_url, 'logout': logout_url}
+%>

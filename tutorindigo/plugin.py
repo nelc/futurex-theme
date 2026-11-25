@@ -49,6 +49,8 @@ hooks.Filters.ENV_TEMPLATE_ROOTS.add_item(
 hooks.Filters.ENV_TEMPLATE_TARGETS.add_items(
     [
         ("indigo", "build/openedx/themes"),
+        # fx-learner: child theme of indigo (eox-theming parent), selected per tenant
+        ("fx-learner", "build/openedx/themes"),
         ("indigo/env.config.jsx", "plugins/mfe/build/mfe"),
     ],
 )
@@ -58,6 +60,7 @@ hooks.Filters.ENV_PATTERNS_INCLUDE.add_items(
     [
         r"indigo/lms/static/sass/partials/lms/theme/",
         r"indigo/cms/static/sass/partials/cms/theme/",
+        r"fx-learner/lms/static/sass/partials/lms/theme/",
     ]
 )
 

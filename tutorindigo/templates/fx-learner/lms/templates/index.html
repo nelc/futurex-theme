@@ -1,0 +1,165 @@
+## fx-learner home (brief 4.1): hero carousel from every visible hero_section_v1 of pages_home, then
+## up to 3 featured programs from the first featured_courses_v1. No tabs here: they live on /courses.
+<%page expression_filter="h"/>
+<%inherit file="main.html" />
+<%namespace name='static' file='static_content.html'/>
+<%namespace name='fx_static' file='fx_templates/fx_static_content.html'/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%namespace name='ui' file='/fx_learner/ui.html'/>
+
+<%
+L = fxl.attr.L
+tr = fxl.attr.tr
+slides = fxl.attr.page_sections('pages_home', 'hero_section_v1')
+featured_sections = fxl.attr.page_sections('pages_home', 'featured_courses_v1')
+featured = []
+featured_title = ''
+categories = {}
+if featured_sections:
+    featured_title = tr(featured_sections[0].get('title')).strip() or L('أبرز البرامج', 'Featured programs')
+    tabs = fxl.attr.home_tabs()
+    categories = {tab['id']: tab['name'] for tab in tabs}
+    programs = fxl.attr.catalog(request, courses, tabs)
+    featured = [p for p in programs if p.get('status') == 'open'] + [p for p in programs if p.get('status') == 'upcoming']
+    featured = featured[:3]
+%>
+
+<main id="main" class="fxl-main" aria-label="${L('المحتوى', 'Content')}" tabindex="-1">
+  % if slides:
+  <section class="fxl-hero" aria-roledescription="carousel" aria-label="${L('إعلانات الجهة', 'Announcements')}" data-fxl-hero>
+    <div class="fxl-hero-track">
+      % for index, slide in enumerate(slides):
+      <%
+        slide_title = tr(slide.get('title'))
+        slide_text = tr(slide.get('description'))
+        slide_image = slide.get('hero_image') if isinstance(slide.get('hero_image'), str) else ''
+        slide_view = fxl.attr.hero_slide(request, slide, fx_static.get_fx_link_sections)
+        slide_label = L('%d من %d' % (index + 1, len(slides)), '%d of %d' % (index + 1, len(slides)))
+        slide_state = '' if index == 0 else 'aria-hidden="true" inert'
+      %>
+      <div class="fxl-slide${' is-on' if index == 0 else ''}" role="group" aria-roledescription="slide"
+           aria-label="${slide_label}" ${slide_state | n}
+           % if slide.get('div_id'):
+           id="${slide['div_id']}"
+           % endif
+      >
+        <div class="fxl-wrap fxl-slide-in">
+          <div class="txt">
+            % if index == 0:
+            <h1 class="h1">${slide_title}</h1>
+            % else:
+            <h2 class="h1">${slide_title}</h2>
+            % endif
+            % if slide_text.strip():
+            <p>${slide_text}</p>
+            % endif
+            % if slide_view['meta']:
+            <p class="meta">${slide_view['meta']}</p>
+            % endif
+            <div class="acts">
+              % for button in slide_view['buttons']:
+              <a class="${'fxl-cta' if button['kind'] == 'primary' else 'fxl-cta fxl-cta-line'}" href="${button['href']}" ${button['new_tab'] | n}>${button['label']}</a>
+              % endfor
+            </div>
+          </div>
+          % if slide_image:
+          <div class="art art-img" aria-hidden="true"><img src="${slide_image}" alt="" loading="${'eager' if index == 0 else 'lazy'}" onerror="this.parentNode.className='art art-pattern';this.remove();"/></div>
+          % else:
+          <div class="art art-pattern${' alt' if index % 2 else ''}" aria-hidden="true"></div>
+          % endif
+        </div>
+      </div>
+      % endfor
+    </div>
+    % if len(slides) > 1:
+    <div class="fxl-wrap fxl-hero-ctrl">
+      <button type="button" class="hc-btn" data-fxl-hero-prev aria-label="${L('الإعلان السابق', 'Previous announcement')}">${ui.icon('prev' if fxl.attr.is_ar() else 'next', 18)}</button>
+      <div class="dots">
+        % for index in range(len(slides)):
+        <% dot_label = L('الإعلان %d' % (index + 1), 'Announcement %d' % (index + 1)) %>
+        <button type="button" class="dot" data-fxl-dot="${index}" aria-current="${'true' if index == 0 else 'false'}" aria-label="${dot_label}"></button>
+        % endfor
+      </div>
+      <button type="button" class="hc-btn" data-fxl-hero-next aria-label="${L('الإعلان التالي', 'Next announcement')}">${ui.icon('next' if fxl.attr.is_ar() else 'prev', 18)}</button>
+    </div>
+    % endif
+  </section>
+  % endif
+
+  % if featured_sections:
+  <div class="fxl-wrap">
+    <div class="fxl-sechead">
+      <div class="sh-t"><h2>${featured_title}</h2></div>
+      <a class="fxl-btn-ghost" href="/courses">${L('عرض كل البرامج التدريبية', 'View all training programs')}${ui.arrow(16)}</a>
+    </div>
+    % if featured:
+    <div class="fxl-grid">
+      % for program in featured:
+      ${ui.card(program, categories)}
+      % endfor
+    </div>
+    % else:
+    <div class="fxl-empty">${L('لا توجد برامج متاحة حاليًا.', 'There are no programs available right now.')}</div>
+    % endif
+  </div>
+  % endif
+</main>
+
+% if show_homepage_promo_video:
+  <section id="video-modal" class="modal home-page-video-modal video-modal">
+    <div class="inner-wrapper">
+      <iframe title="YouTube Video" width="640" height="360" src="//www.youtube.com/embed/${homepage_promo_video_youtube_id}?showinfo=0" frameborder="0" allowfullscreen></iframe>
+    </div>
+  </section>
+% endif
+
+<script>
+(function () {
+  var hero = document.querySelector('[data-fxl-hero]');
+  if (!hero) { return; }
+  var slides = [].slice.call(hero.querySelectorAll('.fxl-slide'));
+  var dots = [].slice.call(hero.querySelectorAll('[data-fxl-dot]'));
+  if (slides.length < 2) { return; }
+  var current = 0, timer = null, held = false;
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function go(index) {
+    current = (index + slides.length) % slides.length;
+    slides.forEach(function (slide, i) {
+      var on = i === current;
+      slide.classList.toggle('is-on', on);
+      slide.setAttribute('aria-hidden', on ? 'false' : 'true');
+      slide.inert = !on;
+    });
+    dots.forEach(function (dot, i) { dot.setAttribute('aria-current', i === current ? 'true' : 'false'); });
+  }
+  function arm() {
+    clearInterval(timer);
+    if (reduced || held) { return; }
+    timer = setInterval(function () { if (!document.hidden) { go(current + 1); } }, 7000);
+  }
+  hero.querySelector('[data-fxl-hero-prev]').addEventListener('click', function () { go(current - 1); arm(); });
+  hero.querySelector('[data-fxl-hero-next]').addEventListener('click', function () { go(current + 1); arm(); });
+  dots.forEach(function (dot) {
+    dot.addEventListener('click', function () { go(parseInt(dot.getAttribute('data-fxl-dot'), 10)); arm(); });
+  });
+  ['mouseenter', 'focusin'].forEach(function (name) { hero.addEventListener(name, function () { held = true; arm(); }); });
+  ['mouseleave', 'focusout'].forEach(function (name) { hero.addEventListener(name, function () { held = false; arm(); }); });
+  arm();
+})();
+</script>
+
+<%block name="js_extra">
+   <script type="text/javascript">
+      $(window).load(function() {
+         if(getParameterByName('next')) {
+              $('#login').trigger("click");
+         }
+      })
+   </script>
+</%block>
+
+% if show_signup_immediately is not UNDEFINED:
+<script type="text/javascript">
+  $(window).load(function() {$('#signup_action').trigger("click");});
+</script>
+% endif

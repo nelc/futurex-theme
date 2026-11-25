@@ -1,0 +1,6 @@
+// fx-learner is a child of indigo. Open edX compiles a theme's LMS Sass as edx-platform's entry files with
+// <theme>/lms/static/sass/partials first on the include path, so only these partials are swapped in and the
+// parent's are NOT seen automatically. Each one therefore re-imports indigo's file by a path relative to this
+// file: themes are siblings both locally (/openedx/themes/{indigo,fx-learner}) and in production
+// (<repo>/tutorindigo/templates/{indigo,fx-learner}).
+@import "../../../../../../../indigo/lms/static/sass/partials/lms/theme/variables";

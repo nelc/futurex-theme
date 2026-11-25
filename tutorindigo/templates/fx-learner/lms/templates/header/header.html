@@ -1,0 +1,168 @@
+## mako
+## fx-learner header (brief 3.1/3.2): entity logo + short name + parent org, tenant nav, globe language
+## toggle, sign-in button or avatar initial + first name with the learner account menu.
+<%page expression_filter="h" args="online_help_token, use_cookie_banner=False"/>
+
+<%namespace name='static' file='../static_content.html'/>
+<%namespace name='fx_static' file='../fx_templates/fx_static_content.html'/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%namespace name='ui' file='/fx_learner/ui.html'/>
+<%namespace file='../main.html' import="login_query"/>
+<%!
+from django.urls import reverse
+from django.utils.translation import gettext as _
+from lms.djangoapps.branding import api as branding_api
+%>
+
+<%
+L = fxl.attr.L
+ent = fxl.attr.entity(static.get_platform_name())
+home_url = branding_api.get_base_url(request.is_secure())
+
+header_cfg = fx_static.get_fx_config_value('header', default_value={})
+nav_links = fx_static.get_fx_link_sections(header_cfg.get('sections', []) if isinstance(header_cfg, dict) else [])
+path = request.path
+def nav_active(link):
+    if link == path:
+        return True
+    # The catalogue tab stays active on a program's details page.
+    return link.rstrip('/') == '/courses' and path.startswith('/courses/')
+
+allows_login = not settings.FEATURES.get('DISABLE_LOGIN_BUTTON') and not combined_login_and_register
+
+lang_cfg = fx_static.get_fx_config_value('platform_settings_language', default_value={})
+available = lang_cfg.get('languages') if isinstance(lang_cfg, dict) and isinstance(lang_cfg.get('languages'), list) else ['en']
+supported = fx_static.fx_supported_languages()
+other_langs = [code for code in available if code in supported and code != LANGUAGE_CODE]
+other_lang = other_langs[0] if other_langs else None
+
+if user.is_authenticated:
+    acct = fxl.attr.menu(request, user)
+    urls = fxl.attr.learner_urls()
+    help_cfg = ent['help_link'] or {'page': 'faq'}
+    help_links = fx_static.get_fx_link_sections([dict(help_cfg)])
+    help_url = help_links[0]['link'] if help_links else '/faq'
+%>
+
+% if request.user.is_authenticated and request.COOKIES.get('theme-preview') == 'yes':
+    <%include file="_preview_banner.html"/>
+% endif
+
+<a class="fxl-skip" href="#main">${L('الانتقال إلى المحتوى الرئيسي', 'Skip to main content')}</a>
+
+<header class="fxl-header" id="fxl-header">
+  % if settings.FEATURES.get('ENABLE_COOKIE_POLICY_BANNER', use_cookie_banner):
+    ${static.renderReact(
+        component="CookiePolicyBanner",
+        id="frontend-component-cookie-policy-banner",
+        props={}
+    )}
+  % endif
+  <div class="fxl-wrap fxl-headrow">
+    <a class="fxl-logo" href="${home_url}">
+      % if ent['logo_url']:
+      <span class="mark bare"><img src="${ent['logo_url']}" alt="${ent['short_name']}"/></span>
+      % endif
+      <span class="nm">
+        <span class="t">${ent['short_name']}</span>
+        % if ent['parent_org']:
+        <span class="o">${ent['parent_org']}</span>
+        % endif
+      </span>
+    </a>
+
+    % if nav_links:
+    <nav class="fxl-nav" aria-label="${L('القائمة الرئيسية', 'Main menu')}">
+      % for link in nav_links:
+      <a href="${link['link']}" ${link['new_tab'] | n} aria-current="${'page' if nav_active(link['link']) else 'false'}">${fx_static.t(link.get('link_title'))}</a>
+      % endfor
+    </nav>
+    % endif
+
+    <div class="fxl-headtools">
+      % if other_lang:
+      <button class="fxl-lang-btn" type="button" onclick="handleLanguageChange('${other_lang}')" lang="${other_lang}"
+              aria-label="${L('تغيير اللغة', 'Change language')}">
+        ${ui.icon('globe', 16)}<span class="txt">${supported[other_lang]}</span>
+      </button>
+      % endif
+
+      % if user.is_authenticated:
+      <div class="fxl-acct" data-fxl-acct>
+        <button class="fxl-acct-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="fxl-acct-menu">
+          <span class="av" aria-hidden="true">${acct['initial']}</span><span class="nm">${acct['first_name']}</span>${ui.icon('chev', 16)}
+        </button>
+        <div class="fxl-acct-menu" id="fxl-acct-menu" role="menu" hidden>
+          <div class="am-head">
+            <span class="av" aria-hidden="true">${acct['initial']}</span>
+            <div>
+              <b>${acct['full_name'] or acct['first_name']}</b>
+              % if acct['masked_email']:
+              <small><span dir="ltr">${acct['masked_email']}</span></small>
+              % endif
+            </div>
+          </div>
+          % if acct['resume'] and acct['resume'].get('resume_url'):
+          <a class="am-cont" role="menuitem" href="${acct['resume']['resume_url']}">
+            <small>${L('أكمل من حيث توقفت', 'Continue where you left off')}</small>
+            <b>${acct['resume'].get('title', '')}</b>
+            <span class="fxl-pbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${acct['resume']['progress_percent']}"><i style="width: ${acct['resume']['progress_percent']}%"></i></span>
+          </a>
+          % endif
+          <div class="am-sep"></div>
+          <a class="am-item" role="menuitem" href="${urls['my']}">${ui.icon('book', 18)}<span>${L('برامجي', 'My programs')}</span>
+            % if acct['programs_count'] is not None:
+            <em>${acct['programs_count']}</em>
+            % endif
+          </a>
+          <a class="am-item" role="menuitem" href="${urls['certificates']}">${ui.icon('cert', 18)}<span>${L('شهاداتي', 'My certificates')}</span>
+            % if acct['certificates_count'] is not None:
+            <em>${acct['certificates_count']}</em>
+            % endif
+          </a>
+          <a class="am-item" role="menuitem" href="${urls['profile']}">${ui.icon('user', 18)}<span>${L('الملف الشخصي', 'Profile')}</span></a>
+          <a class="am-item" role="menuitem" href="${help_url}">${ui.icon('help', 18)}<span>${L('المساعدة', 'Help')}</span></a>
+          <div class="am-sep"></div>
+          <a class="am-item out" role="menuitem" href="${urls['logout']}">${ui.icon('out', 18)}<span>${L('تسجيل الخروج', 'Sign out')}</span></a>
+        </div>
+      </div>
+      % elif allows_login:
+      <a class="fxl-btn-primary" href="/login${login_query()}">${L('تسجيل الدخول', 'Sign in')}</a>
+      % endif
+    </div>
+  </div>
+</header>
+
+## The platform's language form and handleLanguageChange() (indigo), with its own buttons hidden by CSS:
+## the globe button above drives it, so the preference API / session update path is unchanged.
+<div class="fxl-lang-form">
+  <%include file="../fx_templates/fx_language_selector.html" args="user=user, current_lang=LANGUAGE_CODE"/>
+</div>
+
+<script>
+(function () {
+  // fx-learner is light only: drop indigo's dark class if an old cookie re-applies it.
+  window.addEventListener('load', function () { document.body.classList.remove('indigo-dark-theme'); });
+  var box = document.querySelector('[data-fxl-acct]');
+  if (!box) { return; }
+  var btn = box.querySelector('.fxl-acct-btn');
+  var menu = box.querySelector('.fxl-acct-menu');
+  function setOpen(open, focusButton) {
+    menu.hidden = !open;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      var first = menu.querySelector('[role="menuitem"]');
+      if (first) { first.focus(); }
+    } else if (focusButton) {
+      btn.focus();
+    }
+  }
+  btn.addEventListener('click', function () { setOpen(menu.hidden, false); });
+  document.addEventListener('mousedown', function (event) {
+    if (!menu.hidden && !box.contains(event.target)) { setOpen(false, false); }
+  });
+  box.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && !menu.hidden) { setOpen(false, true); }
+  });
+})();
+</script>

@@ -1,0 +1,140 @@
+## fx-learner UI building blocks: <%namespace name='ui' file='/fx_learner/ui.html'/> then ${ui.icon('clock')} etc.
+<%page expression_filter="h"/>
+<%namespace name='fxl' file='/fx_learner/helpers.html'/>
+<%!
+from openedx.core.djangolib.markup import HTML
+
+ICONS = {
+    'clock': '<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
+    'cert': '<circle cx="12" cy="9" r="5"></circle><path d="M9 14l-1 7 4-2 4 2-1-7"></path>',
+    'layers': '<path d="M12 3l9 5-9 5-9-5 9-5z"></path><path d="M3 14l9 5 9-5"></path>',
+    'build': '<path d="M4 21V5a1 1 0 011-1h9a1 1 0 011 1v16"></path><path d="M15 9h4a1 1 0 011 1v11"></path><path d="M2 21h20"></path>',
+    'level': '<path d="M4 7h16"></path><path d="M4 12h10"></path><path d="M4 17h6"></path>',
+    'cal': '<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 11h18"></path>',
+    'money': '<path d="M12 2v20"></path><path d="M17 6H9.5a3.5 3.5 0 000 7H14a3.5 3.5 0 010 7H6"></path>',
+    'globe': '<circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c3 3.5 3 14 0 18M12 3c-3 3.5-3 14 0 18"></path>',
+    'chev': '<path d="m6 9 6 6 6-6"></path>',
+    'search': '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>',
+    'book': '<path d="M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5v14z"></path><path d="M4 19.5A2.5 2.5 0 006.5 22H20v-5"></path>',
+    'user': '<circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path>',
+    'help': '<circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5"></path><path d="M12 17h.01"></path>',
+    'out': '<path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3"></path><path d="M10 17l-5-5 5-5"></path><path d="M5 12h12"></path>',
+    'ext': '<path d="M14 5h5v5M19 5l-8 8M18 14v5H5V6h5"></path>',
+    'list': '<path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4 6h.01M4 12h.01M4 18h.01"></path>',
+    'lock': '<rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path>',
+    'prev': '<path d="m9 6 6 6-6 6"></path>',
+    'next': '<path d="m15 6-6 6 6 6"></path>',
+    # "toward the end of the reading direction" arrows, picked per direction in arrow()
+    'arrow_rtl': '<path d="M19 12H5M11 6l-6 6 6 6"></path>',
+    'arrow_ltr': '<path d="M5 12h14M13 6l6 6-6 6"></path>',
+}
+
+SOCIAL = {
+    'x': '<path d="M17.5 3h3l-6.6 7.6L21.8 21h-5.9l-4.6-6-5.3 6H3l7.1-8.1L2.6 3h6l4.2 5.5zm-1 16h1.7L8.1 4.7H6.3z"/>',
+    'twitter': '<path d="M17.5 3h3l-6.6 7.6L21.8 21h-5.9l-4.6-6-5.3 6H3l7.1-8.1L2.6 3h6l4.2 5.5zm-1 16h1.7L8.1 4.7H6.3z"/>',
+    'youtube': '<path d="M22 12s0-3.2-.4-4.7a2.5 2.5 0 00-1.7-1.8C18.3 5 12 5 12 5s-6.3 0-7.9.5a2.5 2.5 0 00-1.7 1.8C2 8.8 2 12 2 12s0 3.2.4 4.7c.2.9.9 1.6 1.7 1.8C5.7 19 12 19 12 19s6.3 0 7.9-.5a2.5 2.5 0 001.7-1.8c.4-1.5.4-4.7.4-4.7zM10 15V9l5.2 3z"/>',
+    'linkedin': '<path d="M4.5 3.5a2 2 0 110 4 2 2 0 010-4zM3 9h3v12H3zM9 9h3v1.7c.6-1 1.8-2 3.6-2 2.7 0 4.4 1.7 4.4 5V21h-3v-6.3c0-1.7-.7-2.7-2.1-2.7-1.2 0-2 .8-2.3 1.7-.1.3-.1.7-.1 1V21H9z"/>',
+    'instagram': '<path d="M12 7.3a4.7 4.7 0 100 9.4 4.7 4.7 0 000-9.4zm0 7.7a3 3 0 110-6 3 3 0 010 6zM17 6a1.1 1.1 0 100 2.2A1.1 1.1 0 0017 6z"/><path d="M16.5 2h-9A5.5 5.5 0 002 7.5v9A5.5 5.5 0 007.5 22h9a5.5 5.5 0 005.5-5.5v-9A5.5 5.5 0 0016.5 2zm3.7 14.5a3.7 3.7 0 01-3.7 3.7h-9a3.7 3.7 0 01-3.7-3.7v-9a3.7 3.7 0 013.7-3.7h9a3.7 3.7 0 013.7 3.7z"/>',
+    'facebook': '<path d="M14 8h3V4h-3a4 4 0 00-4 4v2H7v4h3v8h4v-8h3l1-4h-4V8z"/>',
+    'snapchat': '<path d="M12 2.5c2.9 0 5 2.2 5 5.2v2.1l1.6-.5c.6-.2 1.1.5.6 1l-1.8 1.2c.6 1.8 2 3.2 3.8 3.8.5.2.5.9 0 1.1l-1.9.6-.4 1.4-2-.2c-1 .1-1.8.7-2.6 1.3-.7.5-1.4.9-2.3.9s-1.6-.4-2.3-.9c-.8-.6-1.6-1.2-2.6-1.3l-2 .2-.4-1.4-1.9-.6c-.5-.2-.5-.9 0-1.1 1.8-.6 3.2-2 3.8-3.8L4.8 10.3c-.5-.5 0-1.2.6-1l1.6.5V7.7c0-3 2.1-5.2 5-5.2z"/>',
+    'tiktok': '<path d="M16 3c.4 2.2 1.8 3.7 4 4v3.2c-1.5 0-2.8-.4-4-1.2v6.5A6.5 6.5 0 119.5 9v3.3a3.2 3.2 0 103.2 3.2V3z"/>',
+    'telegram': '<path d="M21.5 4.3L2.9 11.5c-1 .4-1 1.6 0 1.9l4.7 1.5 1.8 5.6c.2.7 1.1.9 1.6.3l2.6-2.7 4.8 3.5c.6.4 1.4.1 1.6-.6l3.2-15.3c.2-.9-.7-1.7-1.7-1.4zM9.9 14.5l8-6.9-6.2 7.9-.3 3.1z"/>',
+    'whatsapp': '<path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.5.5c-.2.2-.3.3-.1.6.2.3.8 1.4 1.8 2.2 1.2 1.1 2.2 1.4 2.5 1.6.3.1.5.1.6-.1l.9-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.3 0 .2 0 .8-.1 1.4z"/>',
+}
+%>
+
+<%def name="icon(name, size=16)">${HTML('<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{p}</svg>'.format(s=int(size), p=ICONS.get(name, '')))}</%def>
+
+<%def name="arrow(size=16)">${icon('arrow_rtl' if fxl.attr.is_ar() else 'arrow_ltr', size)}</%def>
+
+<%def name="social_icon(provider)">${HTML('<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">{p}</svg>'.format(p=SOCIAL.get(provider, '')))}</%def>
+
+<%def name="has_social_icon(provider)" buffered="True"><% return provider in SOCIAL %></%def>
+
+## Title band with breadcrumb. crumbs: [(label, url_or_None), ...]; the last crumb is the current page.
+<%def name="pagehead(title, crumbs=None, subtitle='')">
+<div class="fxl-phead">
+  <div class="fxl-wrap">
+    % if crumbs:
+    <nav class="fxl-crumbs" aria-label="${fxl.attr.L('مسار التنقل', 'Breadcrumb')}">
+      % for index, (label, url) in enumerate(crumbs):
+        % if index:
+        <span class="sep" aria-hidden="true">/</span>
+        % endif
+        % if url and index < len(crumbs) - 1:
+        <a href="${url}">${label}</a>
+        % else:
+        <span class="here" aria-current="page">${label}</span>
+        % endif
+      % endfor
+    </nav>
+    % endif
+    <h1>${title}</h1>
+    % if subtitle:
+    <p>${subtitle}</p>
+    % endif
+  </div>
+</div>
+</%def>
+
+## Default cover: the entity colour with the program name, never a broken image or alt text.
+<%def name="cover(program)">
+% if program.get('image_url'):
+<img src="${program['image_url']}" alt="" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false;"/><span class="fxl-cv-def" hidden><i>${program['title']}</i></span>
+% else:
+<span class="fxl-cv-def"><i>${program['title']}</i></span>
+% endif
+</%def>
+
+## Program card (brief 4.8). categories: {category_id: name}. data-* attributes feed the catalogue filters.
+<%def name="card(program, categories=None)">
+<%
+status_text, status_class = fxl.attr.status_info(program)
+mode = fxl.attr.mode_label(program.get('learning_mode'))
+hours = fxl.attr.hours_text(program.get('effort_hours'))
+category_names = [(categories or {}).get(c) for c in program.get('category_ids', [])]
+category_names = [c for c in category_names if c]
+muted = program.get('status') in ('closed', 'full')
+%>
+<a class="fxl-card${' is-muted' if muted else ''}" href="${program['about_url']}"
+   data-title="${program['title'].lower()}"
+   data-cats="${' '.join(program.get('category_ids', []))}"
+   data-mode="${mode}"
+   data-level="${fxl.attr.level_label(program.get('level'))}"
+   data-dur="${fxl.attr.duration_bucket(program.get('effort_hours'))}"
+   data-cert="${fxl.attr.certificate_label(program.get('has_certificate'))}"
+   data-status="${status_text}">
+  <div class="fxl-cover">${cover(program)}</div>
+  <div class="fxl-card-body">
+    % if mode or category_names:
+    <div class="fxl-badges">
+      % if mode:
+      <span class="fxl-badge">${mode}</span>
+      % endif
+      % for name in category_names[:1]:
+      <span class="fxl-badge alt">${name}</span>
+      % endfor
+    </div>
+    % endif
+    <h3>${program['title']}</h3>
+    % if hours or program.get('has_certificate'):
+    <div class="fxl-metarow">
+      % if hours:
+      <span>${icon('clock', 14)}${hours}</span>
+      % endif
+      % if program.get('has_certificate'):
+      <span>${icon('cert', 14)}${fxl.attr.L('شهادة', 'Certificate')}</span>
+      % endif
+    </div>
+    % endif
+    <div class="fxl-cardfoot">
+      % if status_text:
+      <span class="fxl-state ${status_class}">${status_text}</span>
+      % else:
+      <span></span>
+      % endif
+      <em>${fxl.attr.L('التفاصيل', 'Details')}</em>
+    </div>
+  </div>
+</a>
+</%def>
